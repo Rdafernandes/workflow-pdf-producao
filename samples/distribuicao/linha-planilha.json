@@ -1,0 +1,12 @@
+{
+  "responsavel_planilha": "Responsavel Exemplo",
+  "cliente_planilha": "Cliente Exemplo Ltda.",
+  "demanda_planilha": "Projeto Exemplo",
+  "status_planilha": "ATENCAO! DEFINIR STATUS",
+  "transporte_planilha": "ATENCAO! DEFINIR TRANSPORTE",
+  "horario_planilha": "14:00",
+  "categoria_planilha": "Instalacao",
+  "entrega_planilha": "15/03/2026",
+  "instalador_planilha": "ATENCAO! DEFINIR INSTALADOR",
+  "os_planilha": "12345"
+}

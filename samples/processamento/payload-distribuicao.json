@@ -1,0 +1,70 @@
+{
+  "os_num": "12345",
+  "folder_id": "drive_folder_exemplo_12345",
+  "folder_name": "OS 12345 - Cliente Exemplo",
+  "cache_id": "",
+  "cabecalho": {
+    "Nº OS": "12345",
+    "Data de aprovação": "10/03/2026",
+    "Hora de aprovação": "09:30",
+    "Vendedor": "Vendedor Exemplo",
+    "Cliente": "Cliente Exemplo Ltda.",
+    "Contato": "Contato Exemplo",
+    "Telefone do contato": "(00)00000-0000",
+    "CNPJ/CPF": "00.000.000/0000-00",
+    "Local de instalação": "Endereco ficticio, 000 - Cidade Exemplo",
+    "Observações da O.S.": "Observacoes operacionais ficticias usadas apenas para demonstracao.",
+    "Tipo de OS": "Instalado",
+    "Ref. (nome do trabalho)": "Projeto Exemplo",
+    "Data de entrega": "15/03/2026",
+    "Hora de entrega": "14:00",
+    "Classificação do projeto": "Projeto ficticio",
+    "Orçamentista/atendente": "Atendente Exemplo"
+  },
+  "produtos": {
+    "Produtos": [
+      {
+        "codigo_item": "1",
+        "codigo_item_pai": "1",
+        "subitem": "",
+        "layout": "A",
+        "descricao_cliente": "Painel institucional ficticio para area interna.",
+        "produto": "Painel",
+        "modelo": "ACM",
+        "acabamentos": "Impressao UV e corte eletronico",
+        "dimensoes": {
+          "largura": "1200",
+          "altura": "800",
+          "espessura": "3"
+        },
+        "quantidade": "2",
+        "materias_primas": [
+          {
+            "nome": "ACM branco",
+            "especificacao": "3 mm",
+            "unidade": "chapa",
+            "quantidade": "1"
+          }
+        ],
+        "maquinario_utilizado": [
+          "Impressora UV",
+          "Mesa de corte"
+        ],
+        "contexto_producao": "Item ficticio usado para demonstrar estrutura de produto processado.",
+        "etiquetas": [
+          "Impressao UV",
+          "Corte eletronico"
+        ]
+      }
+    ],
+    "ContagemItens": [
+      {
+        "codigo_item_pai": "1",
+        "subitem": "",
+        "produto": "Painel",
+        "quantidade": 2
+      }
+    ],
+    "QuantidadeTotalItens": 2
+  }
+}

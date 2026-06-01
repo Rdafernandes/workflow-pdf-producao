@@ -1,0 +1,1397 @@
+{
+  "name": "2. PDF de OS | PDF para Chronos -> Google Drive (_{{NOME_PASTA_OPERACIONAL}})",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{ $('Extrair nº OS').item.json.mediaUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{TOKEN_API_MENSAGERIA_REMOVIDO}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "{{ID_INTERNO_08}}",
+      "name": "Download PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1904,
+        256
+      ],
+      "onError": "{{ONERROR_01}}"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "{{ID_INTERNO_09}}",
+      "name": "Extrair Texto PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -1728,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('JSON Cabecalho').item.json.cabecalho.Cliente }} os {{ $('JSON Cabecalho').item.json.cabecalho['Nº OS'] }} ({{ $('JSON Cabecalho').item.json.cabecalho['Ref. (nome do trabalho)'] }})",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "{{URL_REDACTED_01}}"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "{{VALUE_02}}",
+          "mode": "list",
+          "cachedResultName": "_{{NOME_PASTA_OPERACIONAL}}",
+          "cachedResultUrl": "{{URL_REDACTED_02}}"
+        },
+        "options": {}
+      },
+      "id": "{{ID_INTERNO_10}}",
+      "name": "Criar Pasta Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2560,
+        144
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "{{ID_CREDENCIAL_GOOGLE_DRIVE_01}}",
+          "name": "{{GOOGLE_DRIVE_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "=data",
+        "name": "={{ $('When Executed by Another Workflow').item.json.filename }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "{{URL_REDACTED_01}}"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{$node[\"Criar Pasta Google Drive\"].json.id}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "{{ID_INTERNO_11}}",
+      "name": "Upload PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3104,
+        144
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "{{ID_CREDENCIAL_GOOGLE_DRIVE_01}}",
+          "name": "{{GOOGLE_DRIVE_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Run Once for Each Item\n\n// 1) tenta no formato \"achatado\" (seu caso atual)\nlet filename =\n  $json.filename ||\n  $json.file_name ||\n  $json.caption ||\n  '';\n\n// 2) fallback: tenta no payload bruto (caso esse node seja usado direto após webhook)\nif (!filename) {\n  const msg = $json?.body?.messages?.[0] ?? {};\n  const doc = msg.document ?? {};\n  filename =\n    doc.file_name ||\n    doc.filename ||\n    msg.caption ||\n    doc.caption ||\n    '';\n}\n\nif (!filename) throw new Error('Filename vazio (não encontrado no item)');\n\n// regex: {{ARQUIVO_OS_EXEMPLO}}\nconst m =\n  filename.match(/ordem[_\\s-]*de[_\\s-]*servi[cç]o[_\\s-]*(\\d+)/i) ||\n  filename.match(/ordem[_\\s-]*servico[_\\s-]*(\\d+)/i);\n\nif (!m) throw new Error(`Não achei número da OS no filename: ${filename}`);\n\n$json.numero_os_str = m[1];          // \"0000\" ou \"7087\"\n$json.numero_os_int = parseInt(m[1], 10); // 0 ou 7087 (pra index/consulta numérica, se quiser)\n$json.file_name = filename;\n\nreturn $json;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2624,
+        128
+      ],
+      "id": "{{ID_INTERNO_12}}",
+      "name": "Extrair nº OS"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "{{ID_INTERNO_13}}",
+              "leftValue": "={{ ($items(\"Verificar se OS foi processada\")[0]?.json?.os_num ?? null) !== null }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2256,
+        128
+      ],
+      "id": "{{ID_INTERNO_14}}",
+      "name": "OS já processada?"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "{{ID_TABELA_SUPABASE_01}}",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "os_num",
+              "condition": "eq",
+              "keyValue": "={{ $json.numero_os_str }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2432,
+        128
+      ],
+      "id": "{{ID_INTERNO_15}}",
+      "name": "Verificar se OS foi processada",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "{{ID_CREDENCIAL_SUPABASE_01}}",
+          "name": "{{SUPABASE_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{URL_REDACTED_03}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{TOKEN_API_MENSAGERIA_REMOVIDO}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('Webhook').item.json.body.messages[0].chat_id }}"
+            },
+            {
+              "name": "body",
+              "value": "=✅ A OS *{{ $('Extrair nº OS').item.json.numero_os_str }}* já foi processada anteriormente.\n\nSegue link da pasta no drive: {{ $json.link_drive }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2064,
+        32
+      ],
+      "id": "{{ID_INTERNO_16}}",
+      "name": "Msg de OS já processada"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{URL_REDACTED_03}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{TOKEN_API_MENSAGERIA_REMOVIDO}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('When Executed by Another Workflow').item.json.chatId }}"
+            },
+            {
+              "name": "body",
+              "value": "=✅ OS *{{ $('Extrair nº OS').item.json.numero_os_str }}* recebida com sucesso! O processamento será iniciado em instantes...\n\n⏳ Aguarde, o processamento pode levar alguns minutos. Você receberá uma confirmação ao final."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2064,
+        256
+      ],
+      "id": "{{ID_INTERNO_17}}",
+      "name": "Msg de OS não processada"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "destinationKey": "pdf_base64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1728,
+        128
+      ],
+      "id": "{{ID_INTERNO_18}}",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "pdf_base64",
+        "options": {
+          "fileName": "={{ $('When Executed by Another Workflow').item.json.filename }}",
+          "mimeType": "application/pdf"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2944,
+        144
+      ],
+      "id": "{{ID_INTERNO_19}}",
+      "name": "base64 → PDF (data)",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "INSTRUÇÕES:\n1. Analise a Ordem de Serviço fornecida e extraia APENAS as informações que constam explicitamente no documento\n2. Para campos não explícitos, consulte o vector store para preencher com a informação mais apropriada\n3. Mantenha a numeração e hierarquia exata das seções\n4. Use formatação padronizada para:\n   - Datas: DD/MM/AAAA às HH:MM\n   - Números: usar ponto para decimal\n   - Unidades: manter padrão (m², ml, un)\n5. NÃO use \"N/A\" ou \"não especificado\" sem antes consultar todos os arquivos relevantes\n6. NÃO inclua textos introdutórios ou conclusivos\n7. ** O resultado final DEVE ESTAR FORMATADO EM JSON **\n8. ** EXTRAIR o Orçamentista que é o nome exibido em \"Autorizado por:\". Essa regra se aplica APENAS QUANDO NÃO HOUVER \"Atendente:\" **\n9. ** Fazer a extração de DATAS E HORAS de entrega e aprovação, SEPARADOS, como mostrado na ESTRUTURA DO RELATÓRIO. Nos campos DATA, somente a data. Nos campos HORA, somente a hora. NÃO EXTRAIR o \"às\" **\n10. ** O \"Tipo de OS\" na \"ESTRUTURA DO RELATÓRIO\" deve ser extraída de onde está \"Logística\" na OS. (Exemplo: Instalado) **\n\n11. REGRA FIXA: Ref. (nome do trabalho)\n  • O valor de \"Ref.\" pode quebrar em múltiplas linhas.\n  • Considere \"Ref. (nome do trabalho)\" como: TUDO QUE VEM APÓS \"Ref.\" ATÉ IMEDIATAMENTE ANTES DA LINHA \"Cliente Contato Telefone\" (ou \"Cliente\").\n  • Ao extrair, SUBSTITUA QUEBRAS DE LINHA INTERNAS POR ESPAÇO e normalize espaços duplos.\n  • Exemplo: Ref. PROJETO EXEMPLO\\nUNIDADE EXEMPLO → PROJETO EXEMPLO UNIDADE EXEMPLO\n\n12. REGRA FIXA: Cliente / Contato / Telefone\n  • A OS sempre terá a linha: Cliente Contato Telefone\n  • A linha seguinte contém no formato: *<CLIENTE> <CONTATO> (<DDD>)<NUMERO>\n  • Procedimento obrigatório:\n    1. Identifique a primeira linha após Cliente Contato Telefone que contenha telefone no padrão: \\(\\d{2}\\)\\d{4,5}-\\d{4}\n    2. Remova o * inicial (se existir).\n    3. Extraia:\n      • Telefone do contato = match exato do telefone\n      • TextoAntesDoTelefone = tudo antes do telefone (trim)\n    4. Separe Cliente e Contato dentro de TextoAntesDoTelefone:\n      • Primeiro, extraia Contato como as ÚLTIMAS 2 palavras de TextoAntesDoTelefone.\n      • Cliente = tudo antes do Contato, preservando sinais e sufixos.\n        Regra anti-corte:\n          - Se Cliente terminar com \"-\" (ou \"-\") após o corte, reanexe o token seguinte que estava imediatamente antes do Contato.\n          - Se existir o padrão \" - MATRIZ\" ou \" - FILIAL\" (ou qualquer outro conteúdo iniciando com \"-\") imediatamente antes do Contato, ele pertence ao Cliente e deve ser mantido.\n        Exemplo obrigatório:\n          \"CLIENTE EXEMPLO - MATRIZ Contato Exemplo\"\n          => Cliente = \"CLIENTE EXEMPLO - MATRIZ\"\n          => Contato = \"Contato Exemplo\"\n      • Exceção: se Cliente ficar vazio, então Contato = última 1 palavra e Cliente = restante\n    5. Cliente NÃO PODE CONTER o nome do contato.\n\n13. REGRA FIXA: Observações da O.S.\n  • Se existir o marcador literal \"Observações da O.S.\", extraia esse campo obrigatoriamente.\n  • O valor de \"Observações da O.S.\" é TUDO QUE VEM APÓS \"Observações da O.S.\" ATÉ IMEDIATAMENTE ANTES DO INÍCIO DO CABEÇALHO DOS ITENS/PRODUTOS.\n  • Considere como início do cabeçalho dos itens/produtos qualquer uma das estruturas abaixo:\n      - \"Produto Modelo Acabamentos Largura Altura ...\"\n      - \"Produto Modelo Acabamentos Largura Altura Espessura Qtd.\"\n      - \"Mídia Equipamentos Acabamentos Largura Altura Qtd.\"\n      - ou qualquer outra linha que claramente marque o início da listagem dos itens\n  • Ao extrair, SUBSTITUA QUEBRAS DE LINHA INTERNAS POR ESPAÇO e normalize espaços duplos.\n  • Preserve integralmente o conteúdo textual das observações, incluindo datas, barras, nomes de locais, observações de instalação, desinstalação, backdrop e demais instruções.\n  • NÃO resumir, NÃO reescrever e NÃO separar esse conteúdo em outros campos.\n  • Mesmo que parte do texto de \"Observações da O.S.\" repita informação de \"Local de instalação\", o campo \"Observações da O.S.\" deve ser preenchido com o bloco completo extraído.\n  • Exemplo:\n    Entrada:\n    \"Observações da O.S. Local: {{ENDERECO_EXEMPLO}}, 190, {{BAIRRO_EXEMPLO}}. Data instalação: 04/03 / Backdrop: 10/03 Data desinstalação: A definir\"\n    Saída:\n    \"Observações da O.S.\": \"Local: {{ENDERECO_EXEMPLO}}, 190, {{BAIRRO_EXEMPLO}}. Data instalação: 04/03 / Backdrop: 10/03 Data desinstalação: A definir\"\n\n14. REGRA FIXA: CNPJ/CPF\n  • Extraia o valor literal do documento do cliente no campo \"CNPJ/CPF\" quando ele estiver explícito na OS.\n  • Preserve a formatação exatamente como estiver no documento.\n  • NÃO normalizar, NÃO remover pontos, barras ou hífens.\n  • Se houver apenas CPF, preencher com CPF.\n  • Se houver apenas CNPJ, preencher com CNPJ.\n\nRetorne apenas dados encontrados, mantendo a estrutura exata do relatório.\n\nESTRUTURA DO RELATÓRIO:\n\n{\n  \"Informações Gerais\": {\n    \"Nº OS\": \"\",\n    \"Data de aprovação\": \"\",\n    \"Hora de aprovação\": \"\",\n    \"Vendedor\": \"\",\n    \"Cliente\": \"\",\n    \"Contato\": \"\",\n    \"Telefone do contato\": \"\",\n    \"CNPJ/CPF\": \"\",\n    \"Local de instalação\": \"\",\n    \"Observações da O.S.\": \"\",\n    \"Tipo de OS\": \"\",\n    \"Ref. (nome do trabalho)\": \"\",\n    \"Data de entrega\": \"\",\n    \"Hora de entrega\": \"\",\n    \"Classificação do projeto\": \"\",\n    \"Orçamentista/atendente\": \"\"\n  }\n}\n\nIMPORTANTE: A resposta final NÃO deve conter NENHUMA referência aos arquivos fonte, incluindo:\n- Não mostrar nomes de arquivos entre colchetes [arquivo.py]\n- Não mencionar nomes de arquivos no texto\n- Não incluir citações ou fontes\n- Responda apenas com JSON puro, sem formatação de código, sem \"```json\" no início e sem \"```\" no final da resposta."
+            },
+            {
+              "content": "=ORDEM DE SERVIÇO:\n{{ $json.os_txt }}"
+            }
+          ]
+        },
+        "builtInTools": {
+          "fileSearch": {
+            "vectorStoreIds": "[\"{{ID_VECTOR_STORE_01}}\"]"
+          }
+        },
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          },
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -1216,
+        352
+      ],
+      "id": "{{ID_INTERNO_20}}",
+      "name": "Gerar cabeçalho",
+      "credentials": {
+        "openAiApi": {
+          "id": "{{ID_CREDENCIAL_OPENAI_01}}",
+          "name": "{{OPENAI_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2384,
+        128
+      ],
+      "id": "{{ID_INTERNO_21}}",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "{{ID_INTERNO_22}}",
+              "name": "pdf_base64",
+              "value": "={{$node[\"Merge\"].json.pdf_base64}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2752,
+        144
+      ],
+      "id": "{{ID_INTERNO_23}}",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "tableId": "{{ID_TABELA_SUPABASE_01}}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "folder_id",
+              "fieldValue": "={{$node[\"Criar Pasta Google Drive\"].json.id}}"
+            },
+            {
+              "fieldId": "os_num",
+              "fieldValue": "={{$node[\"JSON Cabecalho\"].json.cabecalho[\"Nº OS\"]}}"
+            },
+            {
+              "fieldId": "cliente",
+              "fieldValue": "={{$node[\"JSON Cabecalho\"].json.cabecalho[\"Cliente\"]}}"
+            },
+            {
+              "fieldId": "folder_name",
+              "fieldValue": "={{$node[\"Criar Pasta Google Drive\"].json.name}}"
+            },
+            {
+              "fieldId": "cabecalho_json",
+              "fieldValue": "={{ $('JSON Cabecalho').item.json.cabecalho }}"
+            },
+            {
+              "fieldId": "produtos_json",
+              "fieldValue": "={{ $('Merge').item.json.Produtos }}"
+            },
+            {
+              "fieldId": "link_drive",
+              "fieldValue": "={{URL_REDACTED_04}}\"Criar Pasta Google Drive\"].json.id}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3280,
+        144
+      ],
+      "id": "{{ID_INTERNO_24}}",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "{{ID_CREDENCIAL_SUPABASE_01}}",
+          "name": "{{SUPABASE_CREDENTIAL_NAME}}"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "{{ID_INTERNO_25}}",
+              "name": "cabecalho",
+              "value": "={{ $json.output[0].content[0].text['Informações Gerais'] }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -928,
+        352
+      ],
+      "id": "{{ID_INTERNO_26}}",
+      "name": "JSON Cabecalho"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{URL_REDACTED_05}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "os_num",
+              "value": "={{$node[\"JSON Cabecalho\"].json.cabecalho[\"Nº OS\"]}}"
+            },
+            {
+              "name": "folder_id",
+              "value": "={{$node[\"Criar Pasta Google Drive\"].json.id}}"
+            },
+            {
+              "name": "folder_name",
+              "value": "={{$node[\"Criar Pasta Google Drive\"].json.name}}"
+            },
+            {
+              "name": "cache_id",
+              "value": "={{$node[\"Create a row\"].json.id || \"\"}}"
+            },
+            {
+              "name": "cabecalho",
+              "value": "={{$node[\"JSON Cabecalho\"].json.cabecalho}}"
+            },
+            {
+              "name": "produtos",
+              "value": "={{$node[\"Montar JSON final\"].json}}"
+            },
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3488,
+        144
+      ],
+      "id": "{{ID_INTERNO_27}}",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "let txt = $node[\"Merge inteligente\"].json.os_txt;\n\ntxt = txt\n  .replace(/\\r/g, \"\")\n\n  // remove marcadores técnicos do início/fim\n  .replace(/^\\s*<OS_TXT_INICIO>\\s*\\n?/gmi, \"\")\n  .replace(/\\n?\\s*<OS_TXT_FIM>\\s*$/gmi, \"\")\n\n  // remove linhas de paginação soltas no rodapé, ex: \"3/3\"\n  .replace(/^\\s*\\d+\\s*\\/\\s*\\d+\\s*$/gmi, \"\")\n\n  // remove linha de autorização/assinatura final\n  .replace(/^\\s*Autorizado por:.*$/gmi, \"\")\n\n  // preserva cabeçalho da tabela (remove só o token \"Imagem\" quando ele antecede o header da tabela A)\n  .replace(\n    /^\\s*Imagem\\s+(Produto\\s+Modelo\\s+Acabamentos\\s+Largura\\s+Altura(?:\\s+Espess\\.)?\\s+Qtd\\.?)\\s*$/gmi,\n    \"$1\"\n  )\n\n  // remove \"Imagem\" sozinho em linha\n  .replace(/^\\s*Imagem\\s*$/gmi, \"\")\n\n  // normaliza múltiplas quebras\n  .replace(/\\n{2,}/g, \"\\n\")\n\n  // headers de itens -> marcador\n  .replace(/Item\\s+Descrição cliente\\s+Observações item\\s+Quantidade/gi, \"===ITEM===\")\n  .replace(/Item\\s+Imagem\\s+Descrição cliente\\s+Tamanhos\\s+Quantidade/gi, \"===ITEM===\")\n\n  // caso \"===ITEM=== 4 ITEM 4 ...\"\n  .replace(/===ITEM===\\s+(\\d+)\\s+ITEM\\s+\\1/gi, \"===ITEM=== $1\")\n\n  // marcador padrão \"Item 4\"\n  .replace(/\\bItem\\s+(\\d+)\\b/gi, \"===ITEM=== $1\")\n\n  // fallback: \"... Quantidade 4 ITEM 4 ...\"\n  .replace(/\\bQuantidade\\s+(\\d+)\\s+ITEM\\s+\\1\\b/gi, \"Quantidade\\n===ITEM=== $1\")\n\n  // trim final\n  .trim();\n\nreturn [{ json: { text: txt } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1728,
+        592
+      ],
+      "id": "{{ID_INTERNO_28}}",
+      "name": "Normalizar texto"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = String($json.text || \"\");\n\n// quebra por marcador\nconst parts = text.split(\"===ITEM===\");\nparts.shift();\n\nconst out = [];\n\nfor (const raw of parts) {\n  const item = raw.trim();\n  if (!item) continue;\n\n  // tenta pegar o número real do item no início do bloco (ex.: \"1 ITEM 1 - ...\")\n  const m = item.match(/^\\s*(\\d+)\\s+/);\n  const itemIndex = m ? m[1] : String(out.length + 1);\n\n  // filtro mínimo: manter se tiver texto relevante\n  if (item.length < 20) continue;\n\n  out.push({\n    json: {\n      item_index: String(itemIndex),\n      item_text: item,\n    },\n  });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1552,
+        592
+      ],
+      "id": "{{ID_INTERNO_29}}",
+      "name": "Segmentar itens"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=Você receberá o texto de UM subitem (já isolado) de uma Ordem de Serviço.\n\nOBJETIVO\nExtrair TODAS as informações do subitem no JSON fixo abaixo.\nProibido inventar.\nProibido deslocar valores para preencher coluna vazia.\nQuando não houver âncora suficiente, manter \"\" e registrar evidência em contexto_producao.\n\nBLOCOS AUXILIARES POSSÍVEIS NA ENTRADA\n1) CATALOGO_MATCH\n2) LAYOUT_B_MATCH\n3) ORACLE_PROCESSO_HINTS\n4) CONTEXTO_VECTOR_STORE\n\nSE QUALQUER UM DESSES BLOCOS EXISTIR, VOCÊ DEVE LÊ-LOS E PRIORIZÁ-LOS conforme as regras abaixo.\n\nCATALOGO_MATCH (OBRIGATÓRIO)\n- Se existir uma linha começando com:\n  CATALOGO_MATCH: produto=\"...\" modelo=\"...\" acabamentos=\"...\"\n  e essa linha NÃO contiver \"NOT_FOUND\",\n  então você DEVE usar obrigatoriamente esses valores para:\n  produto, modelo, acabamentos.\n- Preserve exatamente os valores do CATALOGO_MATCH para produto e modelo.\n- Para acabamentos:\n  - use o valor do CATALOGO_MATCH somente se ele for específico e útil;\n  - se vier vazio, \"Conforme Modelo\", \".Conforme Modelo\" ou variante genérica equivalente, você DEVE tentar melhorar acabamentos usando:\n    A) coluna/linha explícita de acabamentos,\n    B) ORACLE_PROCESSO_HINTS,\n    C) CONTEXTO_VECTOR_STORE,\n    D) processos explícitos no texto.\n\nLAYOUT_B_MATCH (OBRIGATÓRIO)\n- Se existir uma linha começando com:\n  LAYOUT_B_MATCH: produto=\"...\" modelo=\"...\" acabamentos=\"...\"\n  e essa linha NÃO contiver \"NOT_FOUND\",\n  então você DEVE usar obrigatoriamente esses valores para:\n  produto, modelo, acabamentos.\n- Preserve exatamente os valores do LAYOUT_B_MATCH para produto e modelo.\n- Para acabamentos:\n  - se o valor do match vier vazio, genérico ou insuficiente, tente melhorar usando:\n    A) coluna/linha explícita de acabamentos,\n    B) ORACLE_PROCESSO_HINTS,\n    C) CONTEXTO_VECTOR_STORE,\n    D) processos explícitos no texto.\n\nORACLE_PROCESSO_HINTS (OBRIGATÓRIO SE EXISTIR)\n- Esse bloco pode trazer nomes canônicos e/ou sinônimos de processos, equipamentos e maquinários da empresa.\n- Se existir, use-o como fonte prioritária para:\n  1. maquinario_utilizado\n  2. acabamentos\n- Quando um texto do subitem ou de matéria-prima corresponder claramente a um sinônimo, normalize para o nome canônico mais adequado.\n- Se houver conflito entre texto bruto e ORACLE_PROCESSO_HINTS, priorize o nome canônico do ORACLE_PROCESSO_HINTS.\n- Exemplos típicos de equivalência:\n  - \"IMPRESSORA PRISMAJET\" => maquinario_utilizado\n  - \"IMPRESSORA MIMAKI UV\" => maquinario_utilizado\n  - \"IMPRESSORA MUTOH SUBLIMÁTICA\" => maquinario_utilizado\n  - \"IMPRESSORA KONICA 308\" => maquinario_utilizado\n  - \"Refile na mesa\" => acabamento\n  - \"CORTE i-ECHO Corte\" / \"Mesa de corte digital\" => acabamento/processo de corte\n  - \"Pintura - 25 minutos por unidade\" => acabamento/processo\n  - \"Serralheria - 3 horas por unidade\" => acabamento/processo\n  - \"MARCENARIA - 300 minutos por unidade\" => acabamento/processo\n\nCONTEXTO_VECTOR_STORE (OBRIGATÓRIO SE EXISTIR)\n- Se existir, consulte esse bloco para:\n  1. identificar maquinário equivalente quando o texto vier incompleto ou ambíguo;\n  2. melhorar acabamentos;\n  3. validar categoria técnica do item.\n- Não invente informações que não tenham apoio no texto bruto, ORACLE_PROCESSO_HINTS ou CONTEXTO_VECTOR_STORE.\n\nPRIORIDADE PARA produto / modelo / acabamentos\n1) CATALOGO_MATCH válido\n2) LAYOUT_B_MATCH válido\n3) Extração pela tabela principal do subitem\n4) ORACLE_PROCESSO_HINTS / CONTEXTO_VECTOR_STORE para normalização e melhoria\n5) Fallback por rótulo explícito\n\nPOSSÍVEIS CABEÇALHOS (2 padrões)\nA) Produto | Modelo | Acabamentos | Largura | Altura | (Espess.) | Qtd.\nB) Mídia/Media | Equipamentos | Acabamentos | Largura | Altura | Qtd.\n\nREGRAS (TRAVAS)\n\n1) codigo_item\n- Se o texto começar com um identificador numérico (inteiro ou decimal), use-o.\n- Se não começar, procure o primeiro identificador numérico do subitem antes da tabela principal.\n- Se ainda assim não encontrar, \"\".\n- Nunca usar números de quantidade, largura, altura, espessura ou matéria-prima como codigo_item.\n\n2) produto / modelo / acabamentos\n- Se houver CATALOGO_MATCH válido:\n  - produto = valor do CATALOGO_MATCH\n  - modelo = valor do CATALOGO_MATCH\n  - acabamentos:\n    - se o valor do CATALOGO_MATCH for específico, use-o;\n    - se vier vazio, \"Conforme Modelo\", \".Conforme Modelo\" ou similar genérico, tente melhorar usando texto explícito, ORACLE_PROCESSO_HINTS e CONTEXTO_VECTOR_STORE.\n- Se houver LAYOUT_B_MATCH válido:\n  - produto = valor do LAYOUT_B_MATCH\n  - modelo = valor do LAYOUT_B_MATCH\n  - acabamentos:\n    - se o valor do LAYOUT_B_MATCH for específico, use-o;\n    - se vier vazio, \"Conforme Modelo\", \".Conforme Modelo\" ou similar genérico, tente melhorar usando texto explícito, ORACLE_PROCESSO_HINTS e CONTEXTO_VECTOR_STORE.\n- Se NÃO houver match válido:\n  - Se existir cabeçalho A:\n    - produto = valor sob \"Produto\"\n    - modelo = valor sob \"Modelo\"\n    - acabamentos = valor sob \"Acabamentos\"\n  - Se existir cabeçalho B:\n    - produto = valor sob \"Mídia/Media\"\n    - modelo = valor sob \"Equipamentos\"\n    - acabamentos = valor sob \"Acabamentos\"\n- Se não existir cabeçalho:\n  - produto = linha textual mais provável (inteira)\n  - modelo = \"\"\n  - acabamentos = \"\" (exceto se houver rótulo explícito “Acabamento:”/“Acabamentos:” ou evidência clara em ORACLE_PROCESSO_HINTS / CONTEXTO_VECTOR_STORE)\n\n3) REGRA ESPECÍFICA PARA CABEÇALHO B\n- Se existir cabeçalho \"Mídia/Media | Equipamentos | Acabamentos | Largura | Altura | Qtd\":\n  - produto = valor sob \"Mídia/Media\"\n  - modelo = valor sob \"Equipamentos\"\n  - acabamentos = valor sob \"Acabamentos\"\n- Se o campo \"Equipamentos\" estiver vazio, modelo = \"\".\n- Se o campo \"Equipamentos\" estiver vazio, NUNCA mover o texto de \"Acabamentos\" para \"modelo\".\n- Se o campo \"Acabamentos\" estiver preenchido, esse texto deve ficar em \"acabamentos\", mesmo que \"modelo\" fique vazio.\n- Não usar a descrição do item para substituir esses campos se a tabela estiver presente.\n- Não usar matéria-prima para substituir esses campos se a tabela principal estiver presente.\n\n4) Regras adicionais de acabamentos\n- \"acabamentos\" só pode ser preenchido por:\n  A) célula sob coluna \"Acabamentos\", OU\n  B) rótulo explícito \"Acabamento:\"/\"Acabamentos:\", OU\n  C) processo explícito identificado no texto e normalizado por ORACLE_PROCESSO_HINTS / CONTEXTO_VECTOR_STORE, OU\n  D) linha \"Conforme Modelo\" apenas como último fallback, e somente se não houver nada melhor.\n- Se houver cabeçalho B e a célula \"Acabamentos\" contiver texto de processo/tempo, esse texto deve ir para \"acabamentos\", não para \"modelo\".\n- Se houver expressões como:\n  - \"Refile na mesa\"\n  - \"Corte Reto\"\n  - \"Corte i-ECHO\"\n  - \"Pintura - xx minutos por unidade\"\n  - \"Serralheria - xx horas por unidade\"\n  - \"Marcenaria - xx minutos por unidade\"\n  e elas puderem ser mapeadas por ORACLE_PROCESSO_HINTS / CONTEXTO_VECTOR_STORE, normalize o acabamento para o nome mais útil e específico.\n- Se o valor encontrado for apenas \"Conforme Modelo\", \".Conforme Modelo\" ou equivalente genérico, e houver processo/acabamento explícito melhor no texto, substitua pelo acabamento explícito.\n- produto/modelo/acabamentos nunca podem ser número puro. Se forem, setar \"\" e registrar em contexto_producao.\n\n5) dimensoes\n- Retorne largura, altura e espessura JÁ CONVERTIDAS PARA CENTÍMETROS.\n- Retorne SEMPRE como string com sufixo \" cm\".\n- Exemplos:\n  - 3.150 => \"315 cm\"\n  - 1.410 => \"141 cm\"\n  - 0.600 => \"60 cm\"\n  - 0.043 => \"4.3 cm\"\n  - 29,7cm => \"29.7 cm\"\n  - 150mm => \"15 cm\"\n- Preferência ABSOLUTA: \"Tamanhos Item: ( ... )\"\n  - Se existir \"Tamanhos Item\", você DEVE usá-lo.\n  - 3 valores => largura, altura, espessura\n  - 2 valores => largura, altura; espessura=\"\"\n- Se existir \"Tamanhos Item\", ignore candidatos alternativos conflitantes vindos da linha tabular.\n- Se NÃO existir \"Tamanhos Item\":\n  - use valores das colunas Largura/Altura/(Espess.) quando existirem.\n- Se houver múltiplos valores separados por \"|\" na tabela:\n  - use o primeiro conjunto numérico coerente, exceto se \"Tamanhos Item\" existir.\n- Se existir \"Tamanhos Item\", não deixe largura/altura vazias.\n- espessura só preencher se houver coluna \"Espess.\" com valor OU se Tamanhos Item tiver 3 valores.\n- Nunca usar medidas de matéria-prima para preencher dimensões do subitem.\n\n6) quantidade\n- Preferência 1: coluna \"Qtd\"/\"Qtd.\"\n- Preferência 2: inteiro final da linha numérica principal do bloco tabular\n- Quantidade deve ser inteiro.\n- Se tiver decimal, NÃO usar.\n- Nunca usar números de matérias-primas para preencher quantidade.\n\n7) materias_primas\n- Identificar o bloco \"Matéria-prima do item\".\n- Extrair cada material como objeto:\n  {nome, especificacao, unidade, quantidade}\n- Cada objeto deve representar uma linha/material real.\n- Não criar objeto separado apenas para:\n  - unidade solta\n  - quantidade solta\n  - restos de linha quebrada\n- Se unidade/quantidade vierem quebradas em outra linha, una essas partes ao material imediatamente anterior.\n- O campo \"nome\" deve conter SOMENTE o nome limpo da matéria-prima.\n- O campo \"especificacao\" deve conter SOMENTE a especificação técnica principal do material.\n- Remover do campo \"nome\":\n  - \"(estoque pref.: ...)\"\n  - \"( IMPRESSORA ... )\"\n  - \"( Refile na mesa )\"\n  - \"( Calandra )\"\n  - \"( Corte ... )\"\n  - \"( Pintura ... )\"\n  - \"( Serralheria ... )\"\n  - \"Tamanhos Item: (...)\"\n  - medidas de uso/acoplamento que não fazem parte do nome base\n  - caracteres sem significado como \"$\", \"*\", \"&\" isolado, e ruídos equivalentes\n- O campo \"especificacao\" deve capturar, quando existir:\n  - gramatura: ex. 150gr, 380gr, 50gr, 100gr\n  - espessura: ex. 19mm, 06mm, 18mm\n  - parede/bitola: ex. parede 18\n  - volume/embalagem técnica: ex. 900ml\n  - outras especificações técnicas curtas e relevantes\n- Exemplos:\n  - \"Lona Frontlight Fosca 380gr ...\" => nome=\"Lona Frontlight Fosca\", especificacao=\"380gr\"\n  - \"Velcro Preto 19mm ...\" => nome=\"Velcro Preto\", especificacao=\"19mm\"\n  - \"Primer Laca Nitrocelulose - 900ml ...\" => nome=\"Primer Laca Nitrocelulose\", especificacao=\"900ml\"\n  - \"Metalon Quadrado 30x30mm parede 18 ...\" => nome=\"Metalon Quadrado 30x30mm\", especificacao=\"parede 18\"\n- Se não houver especificação clara, usar \"\".\n- Se não der para separar com segurança:\n  {\n    \"nome\":\"<nome mais limpo possível>\",\n    \"especificacao\":\"\",\n    \"unidade\":\"<se houver>\",\n    \"quantidade\":\"<se houver>\"\n  }\n- Não omitir linhas.\n- Não usar números de matérias-primas para dimensões/quantidade do subitem.\n\n8) maquinario_utilizado\n- Extrair maquinários, equipamentos ou processos produtivos claramente identificáveis no subitem.\n- Fonte prioritária:\n  A) ORACLE_PROCESSO_HINTS\n  B) CONTEXTO_VECTOR_STORE\n  C) texto bruto entre parênteses nas matérias-primas\n  D) linhas explícitas de processo fora das matérias-primas\n- O maquinário normalmente aparece entre parênteses nas linhas de matéria-prima. Você DEVE procurar nesses parênteses.\n- Se um texto bruto corresponder a um sinônimo do ORACLE_PROCESSO_HINTS, normalize para o valor de \"display\" quando ele existir.\n- Se não existir \"display\", use o melhor sinônimo nominal da máquina/equipamento e evite nomes de ação como \"Impressão ...\".\n- Preferir nomes de exibição como:\n  - \"Impressora Prismajet\"\n  - \"Impressora Mimaki UV\"\n  - \"Impressora Mutoh Sublimática\"\n  - \"Impressora Konica 308\"\n  - \"Calandra\"\n  - \"Corte iECHO\"\n  - \"Marcenaria\"\n  - \"Pintura\"\n  - \"Serralheria\"\n- Remover duplicados.\n- Não incluir medida, tempo ou quantidade junto do nome do maquinário.\n- Se não houver maquinário inequívoco, retornar [].\n- Não misturar matéria-prima com maquinário.\n\n9) descricao_cliente\n- Capturar apenas o texto descritivo e observacional antes da tabela principal do subitem.\n- Nunca usar a linha da tabela principal para preencher descricao_cliente.\n- Remover do início de descricao_cliente:\n  - codigo_item isolado\n  - quantidade isolada\n  - números soltos que pertençam à estrutura do item e não ao texto descritivo\n- Não resumir.\n\n10) contexto_producao\n- Guardar qualquer coisa relevante não mapeada com segurança:\n  processos, tempos, máquinas, linhas com \"|\", observações técnicas, candidatos alternativos, etc.\n- Se você usar ORACLE_PROCESSO_HINTS ou CONTEXTO_VECTOR_STORE para normalizar maquinário/acabamentos, registre isso resumidamente em contexto_producao.\n\nFORMATO FIXO (retornar exatamente)\n{\n  \"codigo_item\": \"\",\n  \"descricao_cliente\": \"\",\n  \"produto\": \"\",\n  \"modelo\": \"\",\n  \"acabamentos\": \"\",\n  \"dimensoes\": {\n    \"largura\": \"\",\n    \"altura\": \"\",\n    \"espessura\": \"\"\n  },\n  \"quantidade\": \"\",\n  \"materias_primas\": [\n    { \"nome\": \"\", \"especificacao\": \"\", \"unidade\": \"\", \"quantidade\": \"\" }\n  ],\n  \"maquinario_utilizado\": [],\n  \"contexto_producao\": \"\"\n}\n\nREGRAS FINAIS\n- Retorne JSON puro.\n- Não usar markdown.\n- Não usar ```json.\n- Não adicionar explicações fora do JSON.\n- Não inventar.\n- Não mover valores só para evitar vazio.\n- Se houver dúvida real, manter \"\" e explicar em contexto_producao."
+            },
+            {
+              "content": "=TEXTO DO SUBITEM:\n{{ $json.item_text_llm }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          },
+          "temperature": 0,
+          "truncation": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        800
+      ],
+      "id": "{{ID_INTERNO_30}}",
+      "name": "Extração bruta (produtos)",
+      "credentials": {
+        "openAiApi": {
+          "id": "{{ID_CREDENCIAL_OPENAI_01}}",
+          "name": "{{OPENAI_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfunction cleanText(s) {\n  return String(s || \"\")\n    .replace(/\\$/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfunction extractAcabamentosFallback(current, descricao) {\n  const atual = cleanText(current || \"\");\n  if (atual) return atual;\n\n  const desc = String(descricao || \"\");\n\n  const m = desc.match(\n    /Acabamentos?:\\s*(.+?)(?=(?:\\.\\s*Sendo:)|(?:\\n\\s*Sendo:)|(?:\\.\\s*\\d+\\s*$)|(?:\\n)|$)/i\n  );\n\n  if (!m) return \"\";\n\n  return cleanText(m[1]).replace(/[.;]+$/g, \"\").trim();\n}\n\nfunction normalizeMateriasPrimas(arr) {\n  if (!Array.isArray(arr)) return [];\n\n  const out = [];\n\n  for (const raw of arr) {\n    const nome = cleanText(raw?.nome || \"\");\n    const especificacao = cleanText(raw?.especificacao || \"\");\n    const unidade = cleanText(raw?.unidade || \"\");\n    const quantidade = cleanText(raw?.quantidade || \"\");\n\n    if (!nome && !especificacao && !unidade && quantidade) {\n      if (out.length > 0) {\n        out[out.length - 1].quantidade = out[out.length - 1].quantidade\n          ? `${out[out.length - 1].quantidade} | ${quantidade}`\n          : quantidade;\n      }\n      continue;\n    }\n\n    if (\n      nome &&\n      !especificacao &&\n      !unidade &&\n      !quantidade &&\n      /^\\d+(?:[.,]\\d+)?\\s*[A-Za-zÀ-ÿ]+$/i.test(nome)\n    ) {\n      if (out.length > 0) {\n        out[out.length - 1].quantidade = out[out.length - 1].quantidade\n          ? `${out[out.length - 1].quantidade} | ${nome}`\n          : nome;\n      }\n      continue;\n    }\n\n    if (\n      nome &&\n      !especificacao &&\n      !unidade &&\n      quantidade &&\n      /^(unid(?:ades)?|un|ml|m²|m2)$/i.test(nome)\n    ) {\n      const valorComUnidade = `${quantidade} ${nome}`.trim();\n      if (out.length > 0) {\n        out[out.length - 1].quantidade = out[out.length - 1].quantidade\n          ? `${out[out.length - 1].quantidade} | ${valorComUnidade}`\n          : valorComUnidade;\n      }\n      continue;\n    }\n\n    if (!nome && !especificacao && !unidade && !quantidade) continue;\n\n    out.push({\n      nome,\n      especificacao,\n      unidade,\n      quantidade\n    });\n  }\n\n  return out;\n}\n\nreturn items.map(item => {\n  const meta = item.json || {};\n  const data = meta.output?.[0]?.content?.[0]?.text || {};\n\n  const descricaoFinal =\n    cleanText(data.descricao_cliente || \"\") ||\n    cleanText(meta.descricao_item_pai_raw || \"\");\n\n  const acabamentosFinal = extractAcabamentosFallback(\n    data.acabamentos,\n    descricaoFinal\n  );\n\n  return {\n    json: {\n      ...data,\n\n      item_index: meta.item_index ?? \"\",\n      codigo_item_pai: meta.codigo_item_pai ?? \"\",\n      subitem: meta.subitem ?? \"\",\n      layout: meta.layout ?? \"\",\n      linha_norm: meta.linha_norm ?? \"\",\n      descricao_item_pai_raw: meta.descricao_item_pai_raw ?? \"\",\n\n      descricao_cliente: descricaoFinal,\n      produto: cleanText(data.produto || \"\"),\n      modelo: cleanText(data.modelo || \"\"),\n      acabamentos: acabamentosFinal,\n      materias_primas: normalizeMateriasPrimas(data.materias_primas)\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1216,
+        624
+      ],
+      "id": "{{ID_INTERNO_31}}",
+      "name": "Extrair JSON da resposta"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((it) => {\n  const raw = (it.json.text ?? \"\").toString();\n\n  let t = raw\n    .replace(/\\r\\n/g, \"\\n\")\n    .replace(/[ \\t]+\\n/g, \"\\n\")\n    .replace(/\\n{3,}/g, \"\\n\\n\")\n    .trim();\n\n  // Ref.: tudo entre \"Ref.\" e \"\\nCliente\"\n  t = t.replace(/(\\n?Ref\\.\\s*)([\\s\\S]*?)(\\nCliente\\b)/g, (m, p1, mid, p3) => {\n    const ref = mid.replace(/\\n+/g, \" \").replace(/\\s{2,}/g, \" \").trim();\n    return `\\nRef. ${ref}${p3}`;\n  });\n\n  // Normalizar header \"Cliente Contato Telefone\"\n  t = t.replace(/\\nCliente\\s+Contato\\s+Telefone\\s*\\n?/g, \"\\nCliente Contato Telefone\\n\");\n\n  // Juntar quebras dentro de parênteses\n  t = (() => {\n    let out = \"\";\n    let depth = 0;\n    for (let i = 0; i < t.length; i++) {\n      const ch = t[i];\n      if (ch === \"(\") depth++;\n      if (ch === \")\") depth = Math.max(0, depth - 1);\n      out += (ch === \"\\n\" && depth > 0) ? \" \" : ch;\n    }\n    return out.replace(/\\s{2,}/g, \" \");\n  })();\n\n  // --- SMART JOIN (principal) ---\n  const anchors = [\n    /^Ordem de serviço\\b/i,\n    /^Instalado\\b/i,\n    /^Entrega:\\s*/i,\n    /^Aprovação:\\s*/i,\n    /^Ref\\.\\s*/i,\n    /^Cliente\\s+Contato\\s+Telefone\\b/i,\n    /^CNPJ\\/CPF\\s+Endereço\\b/i,\n    /^Processos de produção previstos\\b/i,\n    /^Observações da O\\.S\\.\\b/i,\n    /^OBS\\.:/i,\n    /^Item\\s+Descrição/i,\n    /^Imagem\\s+Produto/i,\n    /^Produto\\s+Modelo/i,\n    /^Matéria-?prima do item\\b/i,\n    /^Matéria\\s+prima\\s+Unid\\s+Qtd\\s+Uso\\b/i,\n    /^Tamanhos Item:\\b/i,\n    /^Autorizado por:\\b/i,\n  ];\n\n  const isAnchor = (line) => {\n    const s = line.trim();\n    if (!s) return true;                 // mantém blocos\n    if (/^\\d+\\/\\d+$/.test(s)) return true; // \"5/5\"\n    return anchors.some((re) => re.test(s));\n  };\n\n  let lines = t.split(\"\\n\").map(l => l.trimEnd());\n  let out = [];\n\n  for (let i = 0; i < lines.length; i++) {\n    let cur = (lines[i] ?? \"\").trim();\n    if (!cur) { out.push(\"\"); continue; }\n\n    let next = (lines[i + 1] ?? \"\").trim();\n\n    // junta \"Impressão\" + \"60.164 min\"\n    if (next && /^[\\d.]+\\s*min$/i.test(next) && !isAnchor(cur) && !isAnchor(next)) {\n      out.push(`${cur} ${next}`);\n      i++;\n      continue;\n    }\n\n    // junta “Duque de” + “Caxias - RJ” (conectivos/virgula/hífen)\n    if (next && /(?:\\bde\\b|\\bda\\b|\\bdo\\b|,|-)$/.test(cur.toLowerCase()) && !isAnchor(cur) && !isAnchor(next)) {\n      out.push(`${cur} ${next}`);\n      i++;\n      continue;\n    }\n\n    // join genérico de wrap (não-âncora + próxima não-âncora)\n    if (next && !isAnchor(cur) && !isAnchor(next)) {\n      out.push(`${cur} ${next}`.replace(/\\s{2,}/g, \" \"));\n      i++;\n      continue;\n    }\n\n    out.push(cur);\n  }\n\n  t = out.join(\"\\n\").replace(/\\n{3,}/g, \"\\n\\n\").trim();\n\n  it.json.os_txt = `<OS_TXT_INICIO>\\n${t}\\n<OS_TXT_FIM>`;\n  return it;\n\n  // Remove a coluna \"Imagem\" do header e dos dados (mantém o resto)\n  t = t.replace(/^Imagem\\s+Produto\\s+Modelo/mg, \"Produto Modelo\");\n  t = t.replace(/^Imagem\\s+Produto\\s+Modelo\\s+Acabamentos/mg, \"Produto Modelo Acabamentos\");\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1376,
+        352
+      ],
+      "id": "{{ID_INTERNO_32}}",
+      "name": "Merge inteligente"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item) => {\n  let text = item.json.text ?? '';\n  const n = Number(item.json.numpages ?? 0) || 0;\n\n  // normaliza quebras\n  text = text.replace(/\\r\\n/g, '\\n').replace(/\\r/g, '\\n');\n\n  // 1) Remove rodapé \"Autorizado por...\" + paginação (somente páginas 1..n-1)\n  // cobre os 2 formatos: \"1/5\\nAutorizado...\" e \"Autorizado... 1/5\"\n  if (n > 1) {\n    for (let p = 1; p <= n - 1; p++) {\n      const reA = new RegExp(\n        String.raw`\\n?\\s*${p}\\s*\\/\\s*${n}\\s*\\n\\s*Autorizado\\s+por:.*?(?:\\n|$)`,\n        'gi'\n      );\n      const reB = new RegExp(\n        String.raw`\\n\\s*Autorizado\\s+por:.*?\\b${p}\\s*\\/\\s*${n}\\b.*?(?:\\n|$)`,\n        'gi'\n      );\n      text = text.replace(reA, '\\n').replace(reB, '\\n');\n    }\n  }\n\n  // 2) Remove cabeçalho repetido (mantém o primeiro; remove os demais)\n  // regra: cada header começa em \"Ordem de serviço nº\" e termina logo após a linha \"Ref.\"\n  // + opcionalmente 1 linha extra curta em CAIXA ALTA (ex: \"SHOPPING\")\n  const headerToken = 'Ordem de serviço nº';\n  const first = text.indexOf(headerToken);\n\n  if (first !== -1) {\n    let out = text.slice(0, first);        // antes do primeiro header (se existir)\n    let rest = text.slice(first);          // do primeiro header em diante\n\n    // mantém o primeiro header inteiro\n    out += rest;\n    // agora remove headers repetidos a partir do 2º\n    let idx = out.indexOf('\\n' + headerToken, first + headerToken.length);\n\n    while (idx !== -1) {\n      const start = idx + 1; // pula o \\n\n      // acha fim da linha \"Ref.\"\n      const refPos = out.indexOf('\\nRef.', start);\n      if (refPos === -1) break;\n\n      const endRefLine = out.indexOf('\\n', refPos + 1);\n      if (endRefLine === -1) break;\n\n      let cutEnd = endRefLine + 1;\n\n      // linha opcional extra (ex \"SHOPPING\"), curta e em CAIXA ALTA\n      const nextLineEnd = out.indexOf('\\n', cutEnd);\n      if (nextLineEnd !== -1) {\n        const nextLine = out.slice(cutEnd, nextLineEnd).trim();\n        if (\n          nextLine.length > 0 &&\n          nextLine.length <= 32 &&\n          /^[A-Z0-9ÇÃÕÁÀÂÊÔÉÍÓÚÜ\\-\\/ ]+$/.test(nextLine)\n        ) {\n          cutEnd = nextLineEnd + 1;\n        }\n      }\n\n      // remove o header repetido\n      out = out.slice(0, start) + out.slice(cutEnd);\n\n      idx = out.indexOf('\\n' + headerToken, start);\n    }\n\n    text = out;\n  }\n\n  // 3) Limpeza de linhas vazias (equivalente ao seu \\n\\s*\\n do Make)\n  text = text.replace(/\\n[ \\t]*\\n+/g, '\\n').trim();\n\n  item.json.text = text;\n  return item;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1552,
+        352
+      ],
+      "id": "{{ID_INTERNO_33}}",
+      "name": "Limpeza de header/footer"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfunction clean(s) {\n  return String(s || \"\").replace(/\\s+/g, \" \").trim();\n}\n\nfunction parseEtiquetasFromLLM(itemJson) {\n  // caso o output do LLM venha no formato padrão OpenAI\n  const llmObj = itemJson.output?.[0]?.content?.[0]?.text;\n  if (llmObj && Array.isArray(llmObj.etiquetas)) {\n    return [...new Set(llmObj.etiquetas.map(clean).filter(Boolean))];\n  }\n\n  // caso já venha simplificado/mesclado\n  if (Array.isArray(itemJson.etiquetas)) {\n    return [...new Set(itemJson.etiquetas.map(clean).filter(Boolean))];\n  }\n\n  return [\"[sem etiqueta]\"];\n}\n\nfunction parseMaquinario(itemJson) {\n  const llmObj = itemJson.output?.[0]?.content?.[0]?.text;\n\n  if (llmObj && Array.isArray(llmObj.maquinario_utilizado)) {\n    return [...new Set(llmObj.maquinario_utilizado.map(clean).filter(Boolean))];\n  }\n\n  if (Array.isArray(itemJson.maquinario_utilizado)) {\n    return [...new Set(itemJson.maquinario_utilizado.map(clean).filter(Boolean))];\n  }\n\n  return [];\n}\n\nfunction toInt(v) {\n  const n = parseInt(String(v || \"\").replace(/[^\\d-]/g, \"\"), 10);\n  return Number.isFinite(n) ? n : 0;\n}\n\nfunction normalizeMateriasPrimas(arr) {\n  if (!Array.isArray(arr)) return [];\n\n  return arr.map(mp => ({\n    nome: clean(mp?.nome),\n    especificacao: clean(mp?.especificacao),\n    unidade: clean(mp?.unidade),\n    quantidade: clean(mp?.quantidade),\n  }));\n}\n\nfunction buildDimensoes(d) {\n  return {\n    largura: clean(d?.largura),\n    altura: clean(d?.altura),\n    espessura: clean(d?.espessura),\n  };\n}\n\nconst produtos = items.map(({ json }) => {\n  const etiquetas = parseEtiquetasFromLLM(json);\n  const maquinario_utilizado = parseMaquinario(json);\n\n  return {\n    codigo_item: clean(json.codigo_item),\n    codigo_item_pai: clean(json.codigo_item_pai),\n    subitem: clean(json.subitem),\n    layout: clean(json.layout),\n\n    descricao_cliente: clean(json.descricao_cliente),\n    produto: clean(json.produto),\n    modelo: clean(json.modelo),\n    acabamentos: clean(json.acabamentos),\n\n    dimensoes: buildDimensoes(json.dimensoes),\n    quantidade: clean(json.quantidade),\n\n    materias_primas: normalizeMateriasPrimas(json.materias_primas),\n    maquinario_utilizado,\n    contexto_producao: clean(json.contexto_producao),\n\n    etiquetas\n  };\n});\n\nconst contagemItens = produtos.map(p => ({\n  codigo_item_pai: p.codigo_item_pai || p.codigo_item,\n  subitem: p.subitem,\n  produto: p.produto,\n  quantidade: toInt(p.quantidade)\n}));\n\nconst quantidadeTotalItens = contagemItens.reduce((acc, i) => acc + i.quantidade, 0);\n\nreturn [{\n  json: {\n    Produtos: produtos,\n    ContagemItens: contagemItens,\n    QuantidadeTotalItens: quantidadeTotalItens\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        640
+      ],
+      "id": "{{ID_INTERNO_34}}",
+      "name": "Montar JSON final"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputItems = $input.all();\nconst out = [];\n\nconst isHeaderOnly = (s) =>\n  /^\\s*(Produto\\s+Modelo\\s+Acabamentos\\s+Largura\\s+Altura(?:\\s+Espess\\.)?\\s+Qtd\\.?|M[ií]dia\\s+Equipamentos\\s+Acabamentos\\s+Largura\\s+Altura\\s+Qtd\\.?)\\s*$/i\n    .test(String(s || \"\").trim());\n\nfunction extractDescricaoItemPai(txt) {\n  let t = String(txt || \"\").trim();\n\n  // remove código inicial do item, ex.: \"4 - \" / \"6 \"\n  t = t.replace(/^\\s*\\d+(?:\\.\\d+)?\\s*[-–]?\\s*/, \"\");\n\n  // corta tudo a partir do primeiro cabeçalho de tabela principal\n  const headerMatch = t.search(\n    /(?:^|\\n)\\s*(Produto\\s+Modelo\\s+Acabamentos\\s+Largura\\s+Altura(?:\\s+Espess\\.)?\\s+Qtd\\.?|M[ií]dia\\s+Equipamentos\\s+Acabamentos\\s+Largura\\s+Altura\\s+Qtd\\.?)/i\n  );\n\n  if (headerMatch >= 0) {\n    t = t.slice(0, headerMatch).trim();\n  }\n\n  // remove linha final puramente numérica/dimensional, ex.: \"3.500 x 2.610 x 1\"\n  t = t.replace(/\\n?\\s*\\d[\\d.,]*(?:\\s*[xX]\\s*\\d[\\d.,]*){1,2}\\s*$/i, \"\");\n\n  // remove linha final de quantidade isolada, ex.: \"1000\" / \"2\"\n  t = t.replace(/\\n?\\s*\\d+\\s*$/i, \"\");\n\n  // normaliza espaços\n  t = t.replace(/\\s+/g, \" \").trim();\n\n  return t;\n}\n\nfor (const it of inputItems) {\n  const data = it.json || {};\n  const txt = String(data.item_text || \"\");\n  const parent = String(data.item_index ?? \"\").trim();\n\n  const descricaoItemPaiRaw = extractDescricaoItemPai(txt);\n\n  const hits = [];\n\n  // Subitem em início de linha: x.y + texto (bloqueia \"3.500 x ...\" e similares)\n  const reLine = /(^|\\n)\\s*(\\d+\\.\\d{1,2})(?!\\d)\\s+(?![xX]\\b)(?=[A-Za-zÀ-ÿ])/g;\n  let m;\n  while ((m = reLine.exec(txt)) !== null) {\n    const idx = m.index + (m[1] ? m[1].length : 0);\n    hits.push({ idx, code: m[2] });\n  }\n\n  // Subitem colado após cabeçalho do layout B (mesma linha)\n  const reHeaderB =\n    /(^|\\n)\\s*(M[ií]dia\\s+Equipamentos\\s+Acabamentos\\s+Largura\\s+Altura\\s+Qtd\\.?)\\b[ \\t]+(\\d+\\.\\d{1,2})(?!\\d)[ \\t]+(?=[A-Za-zÀ-ÿ])/gi;\n  while ((m = reHeaderB.exec(txt)) !== null) {\n    const idx = m.index + (m[1] ? m[1].length : 0);\n    hits.push({ idx, code: m[3] });\n  }\n\n  hits.sort((a, b) => a.idx - b.idx);\n\n  // remove hits duplicados muito próximos\n  const uniq = [];\n  for (const h of hits) {\n    const last = uniq[uniq.length - 1];\n    if (!last) {\n      uniq.push(h);\n      continue;\n    }\n    if (last.code === h.code && (h.idx - last.idx) < 120) {\n      continue;\n    }\n    uniq.push(h);\n  }\n\n  // sem subitens -> 1 item normal\n  if (uniq.length === 0) {\n    out.push({\n      json: {\n        ...data,\n        codigo_item_pai: parent,\n        subitem: \"\",\n        item_text_sub: txt.trim(),\n        descricao_item_pai_raw: descricaoItemPaiRaw,\n      },\n    });\n    continue;\n  }\n\n  // com subitens -> explode\n  for (let i = 0; i < uniq.length; i++) {\n    let start = uniq[i].idx;\n    const end = i + 1 < uniq.length ? uniq[i + 1].idx : txt.length;\n\n    // se a linha anterior for cabeçalho, inclui junto do bloco\n    const prevNL = txt.lastIndexOf(\"\\n\", start - 1);\n    const prevPrevNL = prevNL > 0 ? txt.lastIndexOf(\"\\n\", prevNL - 1) : -1;\n    const prevLine = txt.slice(prevPrevNL + 1, prevNL).trim();\n    if (isHeaderOnly(prevLine)) start = prevPrevNL + 1;\n\n    const block = txt.slice(start, end).trim();\n\n    // ignora bloco lixo \"só cabeçalho\"\n    if (isHeaderOnly(block)) continue;\n\n    out.push({\n      json: {\n        ...data,\n        codigo_item_pai: parent,\n        subitem: uniq[i].code,\n        item_text_sub: block,\n        descricao_item_pai_raw: descricaoItemPaiRaw,\n      },\n    });\n  }\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1376,
+        592
+      ],
+      "id": "{{ID_INTERNO_35}}",
+      "name": "Explodir subitens"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst out = [];\n\nconst HEADER_A =\n  /Produto\\s+Modelo\\s+Acabamentos\\s+Largura\\s+Altura(?:\\s+Espess\\.)?\\s+Qtd\\.?/i;\n\nfunction firstRowAfterHeader(t, headerRegex) {\n  const m = t.match(headerRegex);\n  if (!m) return \"\";\n  const after = t.slice(m.index + m[0].length);\n  const lines = after.split(\"\\n\").map(s => s.trim()).filter(Boolean);\n  return lines[0] || \"\";\n}\n\nfunction stripTrailingNumericTokens(s) {\n  const parts = String(s || \"\").trim().split(/\\s+/);\n  while (parts.length && /^[\\d.,|]+$/.test(parts[parts.length - 1])) parts.pop();\n  return parts.join(\" \").trim();\n}\n\nfunction normLikeDB(s) {\n  let x = String(s || \"\").trim();\n\n  // remove prefixo subitem: \"4.1 \"\n  x = x.replace(/^\\d+\\.\\d+\\s+/, \"\");\n\n  // remove separadores \"$\" e \"&\"\n  x = x.replace(/[&$]/g, \" \");\n\n  // remove acento, padroniza símbolos\n  x = x.normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\");\n  x = x.replace(/[×]/g, \"x\");\n  x = x.replace(/\\*/g, \"\");\n\n  // remove separadores decimais/milhar ENTRE dígitos\n  x = x.replace(/(?<=\\d)[.,](?=\\d)/g, \"\");\n\n  // colapsa espaços\n  x = x.replace(/\\s+/g, \" \").trim().toUpperCase();\n\n  return x;\n}\n\nfor (const it of items) {\n  const j = it.json || {};\n  const t = String(j.item_text_sub || \"\");\n  const isA = HEADER_A.test(t);\n\n  let keyRaw = \"\";\n  let linhaNorm = \"\";\n\n  if (isA) {\n    const row = firstRowAfterHeader(t, HEADER_A);\n    keyRaw = stripTrailingNumericTokens(row);\n    linhaNorm = normLikeDB(keyRaw);\n  }\n\n  out.push({\n    json: {\n      item_index: j.item_index ?? \"\",\n      item_text: j.item_text ?? \"\",\n      item_text_sub: j.item_text_sub ?? \"\",\n      codigo_item_pai: j.codigo_item_pai ?? \"\",\n      subitem: j.subitem ?? \"\",\n      descricao_item_pai_raw: j.descricao_item_pai_raw ?? \"\",\n\n      layout: isA ? \"A\" : \"B\",\n      catalog_key_raw: keyRaw,\n      linha_norm: linhaNorm,\n    },\n  });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1184,
+        592
+      ],
+      "id": "{{ID_INTERNO_36}}",
+      "name": "Preparar lookup"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "{{ID_TABELA_SUPABASE_02}}",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        736
+      ],
+      "id": "{{ID_INTERNO_37}}",
+      "name": "Lookup catálogo (Supabase)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "{{ID_CREDENCIAL_SUPABASE_01}}",
+          "name": "{{SUPABASE_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst out = [];\n\nfor (const it of items) {\n  const j = (it && it.json && typeof it.json === \"object\" && !Array.isArray(it.json))\n    ? it.json\n    : {};\n\n  const t = String(j.item_text_sub || \"\");\n  const layout = String(j.layout || \"\");\n\n  const produto = j.produto ?? \"\";\n  const modelo = j.modelo ?? \"\";\n  const acabamento = j.acabamento ?? \"\";\n\n  let prefix = \"\";\n\n  if (layout === \"A\" && produto) {\n    prefix = `CATALOGO_MATCH: produto=\"${produto}\" modelo=\"${modelo}\" acabamentos=\"${acabamento || \"\"}\"\\n`;\n  } else if (layout === \"A\") {\n    prefix = `CATALOGO_MATCH: NOT_FOUND linha_norm=\"${j.linha_norm || \"\"}\" raw=\"${j.catalog_key_raw || \"\"}\"\\n`;\n  }\n\n  out.push({\n    json: {\n      ...j,\n      item_text_llm: prefix + t\n    }\n  });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        608
+      ],
+      "id": "{{ID_INTERNO_38}}",
+      "name": "Montar item_text_llm"
+    },
+    {
+      "parameters": {
+        "mode": "combineBySql",
+        "query": "SELECT\n  input1.*,\n  input2.produto   AS produto,\n  input2.modelo    AS modelo,\n  input2.acabamento AS acabamento\nFROM input1\nLEFT JOIN input2\nON input1.linha_norm = input2.linha_norm",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -656,
+        608
+      ],
+      "id": "{{ID_INTERNO_39}}",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst seen = new Set();\nconst out = [];\n\nfor (const it of items) {\n  const j = it.json || {};\n  const ln = String(j.linha_norm || \"\").trim();\n\n  // ignora vazios\n  if (!ln) continue;\n\n  // dedup por linha_norm\n  if (seen.has(ln)) continue;\n  seen.add(ln);\n\n  out.push({ json: j });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        736
+      ],
+      "id": "{{ID_INTERNO_40}}",
+      "name": "Deduplicar catálogo (Supabase)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst out = [];\n\nfunction collapse(s) {\n  return String(s || \"\").replace(/\\s+/g, \" \").trim();\n}\n\nfunction extractFirstMaterialName(text) {\n  const m = String(text || \"\").match(\n    /Mat[ée]ria-prima do item[\\s\\S]*?(?:Mat[ée]ria prima\\s+Unid\\s+Qtd\\s+Uso(?:\\s+Mat[ée]ria prima\\s+Unid\\s+Qtd\\s+Uso)?\\s*)?([^\\n(]+?)(?=\\s*\\(estoque pref\\.:)/i\n  );\n  return m ? collapse(m[1]) : \"\";\n}\n\nfor (const it of items) {\n  const j = it.json || {};\n  const layout = String(j.layout || \"\");\n  const txt = String(j.item_text_llm || \"\");\n\n  // Só atua no layout B\n  if (layout !== \"B\") {\n    out.push({ json: j });\n    continue;\n  }\n\n  // 1) Pega o trecho entre o cabeçalho B e \"Matéria-prima do item\"\n  const m = txt.match(\n    /M[ií]dia\\s+Equipamentos\\s+Acabamentos\\s+Largura\\s+Altura\\s+Qtd\\.?\\s*([\\s\\S]*?)\\s*Mat[ée]ria-prima do item/i\n  );\n\n  let produto = \"\";\n  let modelo = \"\";\n  let acabamentos = \"\";\n\n  if (m) {\n    let row = collapse(m[1]);\n\n    // remove prefixo tipo \"4.2 \"\n    row = row.replace(/^\\d+\\.\\d+\\s+/, \"\");\n\n    // 2) Extrai dimensões/quantidade da direita para a esquerda\n    const right = row.match(/^(.*)\\s+(\\d[\\d.,]*)\\s+(\\d[\\d.,]*)\\s+(\\d+)\\s*$/);\n\n    if (right) {\n      const leftText = collapse(right[1]);\n\n      // 3) Detecta início do trecho de acabamentos/processo\n      const proc = leftText.match(\n        /\\b[A-ZÀ-Ý][A-Za-zÀ-ÿ\\s/]*?\\s*-\\s*\\d+\\s*(?:minutos?|horas?)(?:\\s*\\/\\s*unidade|\\s+por\\s+unidade|\\s+por\\s+hora)?(?:\\s*,\\s*[A-ZÀ-Ý][A-Za-zÀ-ÿ\\s/]*?\\s*-\\s*\\d+\\s*(?:minutos?|horas?)(?:\\s*\\/\\s*unidade|\\s+por\\s+unidade|\\s+por\\s+hora)?)*\\s*$/i\n      );\n\n      const firstMaterial = extractFirstMaterialName(txt);\n\n      if (proc) {\n        const procStart = proc.index;\n        acabamentos = collapse(leftText.slice(procStart));\n        const beforeProc = collapse(leftText.slice(0, procStart));\n\n        if (firstMaterial && beforeProc.toUpperCase().startsWith(firstMaterial.toUpperCase())) {\n          produto = firstMaterial;\n          modelo = collapse(beforeProc.slice(firstMaterial.length));\n        } else {\n          produto = beforeProc;\n          modelo = \"\";\n        }\n      } else {\n        // fallback: se não achou processo, usa primeira matéria-prima como produto\n        if (firstMaterial) {\n          produto = firstMaterial;\n          modelo = \"\";\n        } else {\n          produto = leftText;\n          modelo = \"\";\n        }\n        acabamentos = \"\";\n      }\n    }\n  }\n\n  const prefix =\n    produto || modelo || acabamentos\n      ? `LAYOUT_B_MATCH: produto=\"${produto}\" modelo=\"${modelo}\" acabamentos=\"${acabamentos}\"\\n`\n      : `LAYOUT_B_MATCH: NOT_FOUND\\n`;\n\n  out.push({\n    json: {\n      ...j,\n      item_text_llm: prefix + txt\n    }\n  });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        608
+      ],
+      "id": "{{ID_INTERNO_41}}",
+      "name": "Preparar layout B"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1024,
+        624
+      ],
+      "id": "{{ID_INTERNO_42}}",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfunction clean(s) {\n  return String(s ?? \"\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfunction buildDimensoes(d) {\n  const largura = clean(d?.largura);\n  const altura = clean(d?.altura);\n  const espessura = clean(d?.espessura);\n\n  const parts = [largura, altura];\n  if (espessura) parts.push(espessura);\n\n  return parts.filter(Boolean).join(\" x \");\n}\n\nfunction buildMateriasPrimas(mps) {\n  if (!Array.isArray(mps)) return [];\n\n  return mps\n    .map((mp, i) => {\n      const nome = clean(mp?.nome);\n      const unidade = clean(mp?.unidade);\n      const quantidade = clean(mp?.quantidade);\n\n      if (!nome && !unidade && !quantidade) return \"\";\n\n      return [\n        `- MP${i + 1}:`,\n        nome ? `nome=${nome}` : \"\",\n        unidade ? `unidade=${unidade}` : \"\",\n        quantidade ? `quantidade=${quantidade}` : \"\"\n      ]\n        .filter(Boolean)\n        .join(\" | \");\n    })\n    .filter(Boolean);\n}\n\nreturn items.map(({ json }) => {\n  const { output, ...base } = json;\n\n  const codigoItem = clean(json.codigo_item);\n  const codigoItemPai = clean(json.codigo_item_pai);\n  const subitem = clean(json.subitem);\n  const isSubitem = !!subitem;\n\n  const descricaoCliente = clean(json.descricao_cliente);\n  const descricaoPai = clean(json.descricao_item_pai_raw);\n\n  const produto = clean(json.produto || json.produto_midia);\n  const modelo = clean(json.modelo || json.modelo_equipamentos);\n  const acabamentos = clean(json.acabamentos);\n  const quantidade = clean(json.quantidade);\n  const dimensoes = buildDimensoes(json.dimensoes);\n  const contextoProducao = clean(json.contexto_producao);\n\n  const materiasPrimas = buildMateriasPrimas(json.materias_primas);\n\n  const textoEtiquetas = [\n    `MODO_CLASSIFICACAO: ${isSubitem ? \"SUBITEM\" : \"ITEM\"}`,\n    codigoItem ? `CODIGO_ITEM: ${codigoItem}` : \"CODIGO_ITEM: \",\n    codigoItemPai ? `CODIGO_ITEM_PAI: ${codigoItemPai}` : \"CODIGO_ITEM_PAI: \",\n    subitem ? `SUBITEM: ${subitem}` : \"SUBITEM: \",\n    `LAYOUT: ${clean(json.layout)}`,\n\n    \"\",\n\n    \"SINAIS_DIRETOS_DO_ITEM:\",\n    produto ? `PRODUTO_MIDIA: ${produto}` : \"PRODUTO_MIDIA: \",\n    modelo ? `MODELO_EQUIPAMENTOS: ${modelo}` : \"MODELO_EQUIPAMENTOS: \",\n    acabamentos ? `ACABAMENTOS: ${acabamentos}` : \"ACABAMENTOS: \",\n    dimensoes ? `DIMENSOES: ${dimensoes}` : \"DIMENSOES: \",\n    quantidade ? `QUANTIDADE: ${quantidade}` : \"QUANTIDADE: \",\n    contextoProducao ? `CONTEXTO_PRODUCAO: ${contextoProducao}` : \"CONTEXTO_PRODUCAO: \",\n\n    \"MATERIAS_PRIMAS:\",\n    ...(materiasPrimas.length ? materiasPrimas : [\"-\"]),\n\n    \"\",\n    \"DESCRICAO_CLIENTE_CONTEXTO_FRACO:\",\n    descricaoCliente || \"-\",\n\n    \"\",\n    \"CONTEXTO_ITEM_PAI_APENAS_REFERENCIA:\",\n    isSubitem\n      ? (descricaoPai || \"-\")\n      : \"-\",\n\n    \"\",\n    \"REGRAS_APLICAVEIS:\",\n    \"- Se SUBITEM estiver preenchido, nunca usar o item pai sozinho para ativar processo.\",\n    \"- Priorizar sinais diretos do item: produto/mídia, modelo/equipamentos, acabamentos, matérias-primas e contexto_producao.\",\n    \"- DESCRICAO_CLIENTE e CONTEXTO_ITEM_PAI_APENAS_REFERENCIA são contexto fraco.\",\n    \"- Se houver conflito entre contexto geral e sinais diretos do subitem, os sinais diretos vencem.\"\n  ].join(\"\\n\");\n\n  return {\n    json: {\n      ...base,\n      texto_etiquetas: textoEtiquetas\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        624
+      ],
+      "id": "{{ID_INTERNO_43}}",
+      "name": "Preparar contexto etiquetas"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=Você é um classificador determinístico de etiquetas de produção.\n\nSua única tarefa é analisar o item recebido e retornar SOMENTE um JSON válido no formato:\n\n{\n  \"etiquetas\": [\"...\"]\n}\n\nREGRAS DE SAÍDA\n- Retorne SOMENTE JSON.\n- Retorne SEMPRE a chave \"etiquetas\".\n- Não escreva explicações.\n- Não escreva texto fora do JSON.\n- Não repita a entrada.\n- Não invente campos extras.\n- Não invente etiquetas fora da lista permitida.\n- Remova etiquetas duplicadas.\n- Se nenhuma etiqueta for aplicável com segurança, retorne:\n  { \"etiquetas\": [\"[sem etiqueta]\"] }\n\nETIQUETAS PERMITIDAS\n- 🖨️ Impressão UV\n- 🖨️ Impressão Eco-Solvente\n- ✂️ Router CNC\n- ✂️ Corte eletrônico\n- ✂️ iECHO\n- 🔥 Hotwire\n- 💥 Corte à Laser\n- 🛠️ Marcenaria\n- ⚙️ Serralheria\n- 🎨 Pintura\n- 💡 Instalação elétrica\n- 🚨 URGENTE\n- 🧵 Sublimação\n- [sem etiqueta]\n\nFONTES DE EVIDÊNCIA E PRIORIDADE\n\n1) SINAIS_DIRETOS_DO_ITEM\n   - PRODUTO_MIDIA\n   - MODELO_EQUIPAMENTOS\n   - ACABAMENTOS\n   - DIMENSOES\n   - QUANTIDADE\n   - CONTEXTO_PRODUCAO\n   - MATERIAS_PRIMAS\n\n2) ARQUIVOS AUXILIARES RECUPERADOS DA VECTOR STORE\n   - use esta fonte somente quando a evidência direta do item/subitem for insuficiente, ambígua ou indireta\n   - os arquivos podem confirmar terminologia técnica, processo produtivo, compatibilidade de material, equipamento ou acabamento\n   - os arquivos nunca podem prevalecer contra evidência direta incompatível do item/subitem atual\n   - os arquivos nunca podem ativar sozinhos uma etiqueta sem compatibilidade mínima com o item atual\n\n3) DESCRICAO_CLIENTE_CONTEXTO_FRACO\n\n4) CONTEXTO_ITEM_PAI_APENAS_REFERENCIA\n   - menor prioridade de todas\n   - nunca pode sozinho ativar processo em subitem\n\nREGRA DE DESAMBIGUAÇÃO OBRIGATÓRIA\n- Se a evidência do item/subitem não for suficiente para classificar com segurança, consulte obrigatoriamente os arquivos auxiliares recuperados da vector store antes de decidir.\n- Se, após consultar os arquivos, ainda não houver confirmação suficiente, retorne:\n  { \"etiquetas\": [\"[sem etiqueta]\"] }\n- Nunca chute uma etiqueta.\n- Nunca classifique por associação provável, frequência histórica, hábito operacional, padrão comum de produção ou suposição.\n- Nunca use contexto genérico para adivinhar processo específico.\n\nREGRA CRÍTICA PARA SUBITENS\n- Quando SUBITEM estiver preenchido, trate o subitem como unidade independente de classificação.\n- O item pai serve apenas como contexto fraco.\n- Em subitem, só classifique etiqueta com base em:\n  - evidência direta do próprio subitem\n  - ou confirmação compatível nos arquivos auxiliares\n- Nunca herde automaticamente etiquetas do item pai.\n- Nunca use descrição ampla do item pai para atribuir processo ao subitem atual.\n- Se um item pai agrupar entregáveis diferentes, classifique apenas o processo efetivamente sustentado pelo subitem atual.\n- Se houver conflito entre o subitem atual e o contexto do item pai, o subitem atual vence.\n\nUSO DA VECTOR STORE\n- Use os arquivos auxiliares para confirmar interpretação técnica quando houver dúvida real.\n- Use os arquivos para validar relação entre processo, material, equipamento, acabamento ou contexto produtivo.\n- Não use os arquivos para impor uma etiqueta sem evidência minimamente compatível no item atual.\n- Se houver conflito entre os arquivos auxiliares e os sinais diretos do item/subitem, os sinais diretos do item/subitem vencem.\n- Se os arquivos auxiliares apenas sugerirem possibilidade, mas não confirmarem com segurança, não classifique.\n\nMÉTODO DE DECISÃO\n- Primeiro avalie somente os sinais diretos do item atual.\n- Considere como sinais diretos de alto peso:\n  - MATERIAS_PRIMAS\n  - CONTEXTO_PRODUCAO\n  - ACABAMENTOS tecnicamente específicos\n  - PRODUTO_MIDIA\n  - MODELO_EQUIPAMENTOS\n- Se MATERIAS_PRIMAS ou CONTEXTO_PRODUCAO trouxerem evidência direta e específica de processo, equipamento, tecnologia ou insumo técnico, classifique diretamente a etiqueta correspondente.\n- Se a mesma evidência direta sustentar mais de uma etapa produtiva, mantenha todas as etiquetas sustentadas.\n- Não descarte etiqueta sustentada por evidência direta só porque a DESCRICAO_CLIENTE ou o contexto geral são vagos.\n- Quando houver evidência textual explícita de impressão digital, impressão UV, equipamento de impressão, etapa de impressão ou insumo técnico de impressão, trate isso como evidência forte de impressão.\n- Quando houver evidência textual explícita de corte digital, mesa de corte, plotter de recorte, router, laser, hotwire ou processo equivalente, trate isso como evidência forte de corte específico.\n- Se houver nome comercial, nome técnico ou identificação de equipamento sem tecnologia explicitamente declarada, consulte a vector store para desambiguar a categoria correta.\n- Nome comercial de equipamento, sozinho, não basta para classificar Eco-Solvente.\n- Se houver evidência explícita de impressão, mas a tecnologia exata não estiver clara:\n  - consulte a vector store para verificar se há confirmação técnica da categoria\n  - se a vector store confirmar Eco-Solvente, use 🖨️ Impressão Eco-Solvente\n  - se a vector store confirmar UV ou impressão digital compatível com UV, use 🖨️ Impressão UV\n  - se a vector store não confirmar com segurança, não use Eco-Solvente por inferência\n- Se houver menção explícita a impressão digital e não houver evidência explícita de Eco-Solvente, prefira 🖨️ Impressão UV.\n- A vector store deve ser usada apenas para desambiguar quando a evidência direta for insuficiente, ambígua ou indireta.\n- Se houver apenas pista fraca, genérica ou inespecífica, consulte a vector store antes de classificar.\n- Se a vector store confirmar tecnicamente a interpretação, classifique.\n- Se a vector store não confirmar com segurança, use [sem etiqueta].\n- Não classifique corte por menção genérica a ajuste, acabamento, refilo, recorte simples, rebarbação, aparo ou corte manual sem processo ou equipamento específico.\n- Não classifique impressão apenas por linguagem comercial genérica sem sustentação técnica.\n- Não classifique por associação provável, hábito operacional ou inferência de rotina.\n\nMAPEAMENTO DE ETIQUETAS\n\n1) 🧵 Sublimação\nAtive quando houver evidência direta ou confirmação segura de processo sublimático, impressão por transferência térmica, insumos claramente vinculados a sublimação, ou equipamento/processo inequívoco dessa categoria.\n\n2) 🎨 Pintura\nAtive quando houver evidência direta ou confirmação segura de pintura, preparação para pintura, acabamento pintado ou processo inequívoco dessa categoria.\n- Em SUBITEM, pintura só pode ser ativada se houver sustentação no próprio subitem ou confirmação compatível nos arquivos auxiliares.\n\n3) ⚙️ Serralheria\nAtive quando houver evidência direta ou confirmação segura de fabricação, corte, dobra, solda, montagem ou estrutura metálica.\n- Em SUBITEM, serralheria só pode ser ativada se houver sustentação no próprio subitem ou confirmação compatível nos arquivos auxiliares.\n\n4) 🛠️ Marcenaria\nAtive somente quando houver evidência direta ou confirmação segura de:\n- fabricação, corte, usinagem, montagem ou acabamento em madeira ou derivados\n- material claramente pertencente à família de madeira ou derivados\n- processo inequívoco de marcenaria\n\nREGRAS ESPECÍFICAS PARA 🛠️ Marcenaria\n- Marcenaria exige evidência direta de material ou processo compatível com madeira ou derivados.\n- Estrutura, suporte, montagem, armação ou base, por si só, não ativam marcenaria.\n- Em SUBITEM, não herde marcenaria do item pai.\n- Em SUBITEM, se os sinais diretos do próprio subitem apontarem para processo ou material metálico, não ative 🛠️ Marcenaria sem evidência direta adicional de madeira ou derivados.\n- Se houver evidência direta de serralheria, pintura ou estrutura metálica, isso não deve ser reinterpretado como marcenaria.\n- Se a vector store não confirmar marcenaria com segurança, não use esta etiqueta.\n- Na dúvida entre marcenaria e outro processo estrutural, use somente a etiqueta sustentada por evidência direta suficiente.\n\n5) 🖨️ Impressão UV\nAtive quando houver evidência direta ou confirmação segura de:\n- impressão UV\n- impressão digital compatível com esta categoria\n- etapa produtiva de impressão\n- equipamento de impressão cuja tecnologia esteja explicitamente indicada como UV\n- insumo técnico claramente vinculado a processo de impressão desta categoria\n- identificação de equipamento ou processo que, após consulta à vector store, seja confirmado como pertencente a esta categoria\n\nREGRAS ESPECÍFICAS PARA 🖨️ Impressão UV\n- Se houver menção explícita a impressão digital e não houver evidência explícita de Eco-Solvente, prefira 🖨️ Impressão UV.\n- Se MATERIAS_PRIMAS ou CONTEXTO_PRODUCAO trouxerem evidência direta de impressão compatível, ative a etiqueta mesmo que a DESCRICAO_CLIENTE seja vaga.\n- Se MATERIAS_PRIMAS ou CONTEXTO_PRODUCAO trouxerem evidência direta de impressão compatível, a etiqueta de impressão deve ser mantida mesmo quando o item também tiver outras etiquetas válidas de produção.\n- A presença de outras etapas válidas no mesmo item, como corte, acabamento, marcenaria, serralheria, pintura, instalação ou montagem, não anula a etiqueta de impressão quando houver evidência direta suficiente.\n- Se o item combinar impressão com uma ou mais etapas adicionais, mantenha todas as etiquetas sustentadas por evidência suficiente.\n- Nome comercial ou identificação de equipamento sem tecnologia explícita deve ser desambiguado pela vector store.\n- Se a vector store confirmar UV, ative 🖨️ Impressão UV.\n\n6) 🖨️ Impressão Eco-Solvente\nAtive somente quando houver evidência direta ou confirmação segura de:\n- eco-solvente\n- impressão eco-solvente\n- solvente, desde que claramente usado como tecnologia de impressão\n- equipamento ou processo que, após consulta à vector store, seja confirmado especificamente como pertencente a esta categoria\n\nREGRAS ESPECÍFICAS PARA 🖨️ Impressão Eco-Solvente\n- Eco-Solvente exige confirmação específica.\n- Nome comercial de equipamento, sozinho, não basta para ativar 🖨️ Impressão Eco-Solvente.\n- Se houver apenas evidência genérica de impressão e a vector store não confirmar Eco-Solvente com segurança, não use esta etiqueta.\n- Na ausência de confirmação específica de Eco-Solvente, e havendo evidência explícita de impressão digital compatível, prefira 🖨️ Impressão UV.\n\n7) ✂️ iECHO\nAtive quando houver evidência direta ou confirmação segura de mesa de corte digital ou equipamento inequívoco dessa categoria.\n\n8) ✂️ Corte eletrônico\nAtive quando houver evidência direta ou confirmação segura de plotter de recorte, recorte eletrônico ou processo inequívoco dessa categoria.\n- Não ative por corte genérico, refilo, acabamento simples ou ajuste manual.\n\n9) ✂️ Router CNC\nAtive quando houver evidência direta ou confirmação segura de router, fresagem CNC, usinagem CNC ou processo inequívoco dessa categoria.\n\n10) 💥 Corte à Laser\nAtive quando houver evidência direta ou confirmação segura de corte a laser ou equipamento inequívoco dessa categoria.\n\n11) 🔥 Hotwire\nAtive quando houver evidência direta ou confirmação segura de corte térmico por fio quente ou processo inequívoco dessa categoria.\n\n12) 💡 Instalação elétrica\nAtive quando houver evidência direta ou confirmação segura de componentes elétricos, ligação elétrica, alimentação, iluminação, LED, fonte, transformador, fiação ou instalação elétrica.\n\n13) 🚨 URGENTE\nAtive quando houver evidência direta de urgência, prioridade operacional, prazo crítico ou marcação inequívoca de aceleração.\n\nREGRAS IMPORTANTES DE DECISÃO\n- Use [sem etiqueta] somente quando realmente faltar confirmação suficiente.\n- MATERIAS_PRIMAS têm peso alto.\n- ACABAMENTOS têm peso alto quando forem tecnicamente específicos.\n- CONTEXTO_PRODUCAO tem peso alto.\n- DESCRICAO_CLIENTE_CONTEXTO_FRACO tem peso menor.\n- CONTEXTO_ITEM_PAI_APENAS_REFERENCIA tem peso muito baixo.\n- VECTOR STORE tem papel de confirmação em caso de dúvida, nunca de adivinhação.\n- Se houver conflito entre contexto geral e sinais diretos do subitem, os sinais diretos vencem.\n- Se houver conflito entre arquivos auxiliares e sinais diretos do item/subitem, os sinais diretos vencem.\n- Se um processo pertencer claramente a outro subitem, não classifique no subitem atual.\n- Se não houver evidência suficiente para distinguir entre duas etiquetas possíveis, consulte os arquivos auxiliares.\n- Persistindo a ambiguidade após a consulta, use [sem etiqueta].\n\nORDEM FINAL DAS ETIQUETAS NO ARRAY\nSe houver mais de uma, use esta ordem:\n1. 🚨 URGENTE\n2. 🧵 Sublimação\n3. 🖨️ Impressão UV\n4. 🖨️ Impressão Eco-Solvente\n5. ✂️ iECHO\n6. ✂️ Corte eletrônico\n7. ✂️ Router CNC\n8. 💥 Corte à Laser\n9. 🔥 Hotwire\n10. 🛠️ Marcenaria\n11. ⚙️ Serralheria\n12. 🎨 Pintura\n13. 💡 Instalação elétrica"
+            },
+            {
+              "content": "=ENTRADA DO ITEM:\n{{ $json.texto_etiquetas }}"
+            }
+          ]
+        },
+        "builtInTools": {
+          "fileSearch": {
+            "vectorStoreIds": "[\"{{ID_VECTOR_STORE_01}}\"]"
+          }
+        },
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "name": "etiquetas",
+              "schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"etiquetas\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\n          \"🖨️ Impressão UV\",\n          \"🖨️ Impressão Eco-Solvente\",\n          \"✂️ Router CNC\",\n          \"✂️ Corte eletrônico\",\n          \"✂️ iECHO\",\n          \"🔥 Hotwire\",\n          \"💥 Corte à Laser\",\n          \"🛠️ Marcenaria\",\n          \"⚙️ Serralheria\",\n          \"🎨 Pintura\",\n          \"💡 Instalação elétrica\",\n          \"🚨 URGENTE\",\n          \"🧵 Sublimação\",\n          \"[sem etiqueta]\"\n        ]\n      }\n    }\n  },\n  \"required\": [\"etiquetas\"],\n  \"additionalProperties\": false\n}",
+              "strict": true
+            }
+          },
+          "temperature": 0,
+          "topP": 1,
+          "truncation": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1648,
+        768
+      ],
+      "id": "{{ID_INTERNO_44}}",
+      "name": "Classificar etiquetas",
+      "credentials": {
+        "openAiApi": {
+          "id": "{{ID_CREDENCIAL_OPENAI_01}}",
+          "name": "{{OPENAI_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1968,
+        640
+      ],
+      "id": "{{ID_INTERNO_45}}",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2864,
+        128
+      ],
+      "id": "{{ID_INTERNO_46}}",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      trigger_oracle: true\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        800
+      ],
+      "id": "{{ID_INTERNO_47}}",
+      "name": "Trigger oracle_processo"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "{{ID_TABELA_SUPABASE_03}}",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        128,
+        800
+      ],
+      "id": "{{ID_INTERNO_48}}",
+      "name": "Buscar oracle_processo",
+      "credentials": {
+        "supabaseApi": {
+          "id": "{{ID_CREDENCIAL_SUPABASE_01}}",
+          "name": "{{SUPABASE_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseSinonimos(value) {\n  if (!value) return [];\n\n  if (Array.isArray(value)) {\n    return value\n      .map(v => String(v).trim())\n      .filter(Boolean);\n  }\n\n  const s = String(value).trim();\n\n  // caso venha como string tipo \"{A,B,C}\"\n  if (s.startsWith('{') && s.endsWith('}')) {\n    return s\n      .slice(1, -1)\n      .split(',')\n      .map(v => v.trim().replace(/^\"|\"$/g, ''))\n      .filter(Boolean);\n  }\n\n  // fallback simples\n  return [s];\n}\n\nconst rows = items\n  .map(i => i.json)\n  .filter(r => {\n    if (r.ativo === true) return true;\n    if (String(r.ativo).toLowerCase() === 'true') return true;\n    return false;\n  });\n\nconst base = rows.map(r => ({\n  canonico: String(r.nome || '').trim(),\n  sinonimos: parseSinonimos(r.sinonimos),\n}));\n\nreturn [\n  {\n    json: {\n      oracle_hints_base: base\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        800
+      ],
+      "id": "{{ID_INTERNO_49}}",
+      "name": "Montar base ORACLE hints"
+    },
+    {
+      "parameters": {
+        "jsCode": "function normalize(str) {\n  return String(str || '')\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/\\s+/g, ' ')\n    .trim()\n    .toUpperCase();\n}\n\nfunction uniqueByCanonico(arr) {\n  const seen = new Set();\n  const out = [];\n\n  for (const row of arr) {\n    const key = String(row.canonico || '').trim();\n    if (!key || seen.has(key)) continue;\n    seen.add(key);\n    out.push(row);\n  }\n\n  return out;\n}\n\nfunction titleCase(str) {\n  return String(str || '')\n    .toLowerCase()\n    .replace(/\\b\\w/g, c => c.toUpperCase());\n}\n\nfunction inferDisplayName(canonico, sinonimos) {\n  const c = String(canonico || '').trim();\n  const sin = Array.isArray(sinonimos) ? sinonimos.map(s => String(s).trim()).filter(Boolean) : [];\n  const all = [c, ...sin];\n  const allNorm = all.map(normalize);\n\n  if (allNorm.some(v => v.includes('IMPRESSORA PRISMAJET'))) return 'Impressora Prismajet';\n  if (allNorm.some(v => v.includes('IMPRESSORA MIMAKI UV'))) return 'Impressora Mimaki UV';\n  if (allNorm.some(v => v.includes('IMPRESSORA MUTOH SUBLIMATICA'))) return 'Impressora Mutoh Sublimática';\n  if (allNorm.some(v => v.includes('IMPRESSORA KONICA 308'))) return 'Impressora Konica 308';\n  if (allNorm.some(v => v.includes('CALANDRA'))) return 'Calandra';\n  if (allNorm.some(v => v.includes('IECHO')) || allNorm.some(v => v.includes('I-ECHO'))) return 'Corte iECHO';\n  if (allNorm.some(v => v.includes('REFILE NA MESA'))) return 'Refile na Mesa';\n  if (allNorm.some(v => v.includes('MARCENARIA'))) return 'Marcenaria';\n  if (allNorm.some(v => v.includes('PINTURA'))) return 'Pintura';\n  if (allNorm.some(v => v.includes('SERRALHERIA'))) return 'Serralheria';\n\n  const preferido = sin.find(s => /^IMPRESSORA\\b/i.test(s)) || c || sin[0] || '';\n  return titleCase(preferido);\n}\n\nfunction montarHintsRelevantes(textoItem, oracleBase) {\n  const textoNorm = normalize(textoItem);\n\n  const matched = oracleBase.filter(proc => {\n    const canonicoNorm = normalize(proc.canonico);\n    const sinonimosNorm = Array.isArray(proc.sinonimos)\n      ? proc.sinonimos.map(normalize).filter(Boolean)\n      : [];\n\n    if (canonicoNorm && textoNorm.includes(canonicoNorm)) return true;\n    return sinonimosNorm.some(s => s && textoNorm.includes(s));\n  });\n\n  return uniqueByCanonico(matched);\n}\n\nfunction montarBlocoOracle(hints) {\n  if (!hints.length) {\n    return 'ORACLE_PROCESSO_HINTS:\\n- nenhum hint relevante encontrado';\n  }\n\n  const linhas = hints.map(h => {\n    const canonico = String(h.canonico || '').trim();\n    const display = String(h.display || '').trim();\n    const sinonimos = Array.isArray(h.sinonimos) ? h.sinonimos : [];\n    return `- canonico=\"${canonico}\" display=\"${display}\" sinonimos=${JSON.stringify(sinonimos)}`;\n  });\n\n  return `ORACLE_PROCESSO_HINTS:\\n${linhas.join('\\n')}`;\n}\n\nfunction inserirBlocoNoItemText(baseText, blocoOracle) {\n  const text = String(baseText || '').trim();\n  if (!text) return blocoOracle;\n\n  const lines = text.split('\\n');\n  const primeira = String(lines[0] || '').trim();\n\n  if (\n    primeira.startsWith('CATALOGO_MATCH:') ||\n    primeira.startsWith('LAYOUT_B_MATCH:')\n  ) {\n    return [\n      primeira,\n      blocoOracle,\n      ...lines.slice(1),\n    ].join('\\n').trim();\n  }\n\n  return `${blocoOracle}\\n${text}`.trim();\n}\n\nconst itensOriginais = $('Preparar layout B').all();\nconst oracleBaseRaw = $('Montar base ORACLE hints').first().json.oracle_hints_base || [];\n\nconst oracleBase = oracleBaseRaw\n  .map(row => {\n    const canonico = String(row.canonico || '').trim();\n    const sinonimos = Array.isArray(row.sinonimos)\n      ? row.sinonimos.map(v => String(v).trim()).filter(Boolean)\n      : [];\n\n    return {\n      canonico,\n      sinonimos,\n      display: inferDisplayName(canonico, sinonimos),\n    };\n  })\n  .filter(row => row.canonico);\n\nreturn itensOriginais.map(item => {\n  const j = item.json;\n  const textoBase = j.item_text_llm || j.item_text_sub || j.item_text || '';\n\n  const hintsRelevantes = montarHintsRelevantes(textoBase, oracleBase);\n  const blocoOracle = montarBlocoOracle(hintsRelevantes);\n  const itemTextFinal = inserirBlocoNoItemText(textoBase, blocoOracle);\n\n  return {\n    json: {\n      ...j,\n      oracle_hints_injetados: hintsRelevantes,\n      item_text_llm: itemTextFinal,\n    },\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        800
+      ],
+      "id": "{{ID_INTERNO_50}}",
+      "name": "Injetar ORACLE hints no item_text_llm"
+    }
+  ],
+  "connections": {
+    "Download PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extrair Texto PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair Texto PDF": {
+      "main": [
+        [
+          {
+            "node": "Limpeza de header/footer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Pasta Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload PDF": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair nº OS": {
+      "main": [
+        [
+          {
+            "node": "Verificar se OS foi processada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OS já processada?": {
+      "main": [
+        [
+          {
+            "node": "Msg de OS já processada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Msg de OS não processada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar se OS foi processada": {
+      "main": [
+        [
+          {
+            "node": "OS já processada?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Msg de OS não processada": {
+      "main": [
+        [
+          {
+            "node": "Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "base64 → PDF (data)": {
+      "main": [
+        [
+          {
+            "node": "Upload PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar cabeçalho": {
+      "main": [
+        [
+          {
+            "node": "JSON Cabecalho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Criar Pasta Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "base64 → PDF (data)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Cabecalho": {
+      "main": [
+        [
+          {
+            "node": "Normalizar texto",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Normalizar texto": {
+      "main": [
+        [
+          {
+            "node": "Segmentar itens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Segmentar itens": {
+      "main": [
+        [
+          {
+            "node": "Explodir subitens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extração bruta (produtos)": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge inteligente": {
+      "main": [
+        [
+          {
+            "node": "Gerar cabeçalho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpeza de header/footer": {
+      "main": [
+        [
+          {
+            "node": "Merge inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair JSON da resposta": {
+      "main": [
+        [
+          {
+            "node": "Preparar contexto etiquetas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explodir subitens": {
+      "main": [
+        [
+          {
+            "node": "Preparar lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar lookup": {
+      "main": [
+        [
+          {
+            "node": "Lookup catálogo (Supabase)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup catálogo (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Deduplicar catálogo (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar item_text_llm": {
+      "main": [
+        [
+          {
+            "node": "Preparar layout B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Montar item_text_llm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicar catálogo (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Preparar layout B": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Trigger oracle_processo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Extrair JSON da resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar contexto etiquetas": {
+      "main": [
+        [
+          {
+            "node": "Classificar etiquetas",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classificar etiquetas": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Montar JSON final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar JSON final": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Extrair nº OS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger oracle_processo": {
+      "main": [
+        [
+          {
+            "node": "Buscar oracle_processo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar oracle_processo": {
+      "main": [
+        [
+          {
+            "node": "Montar base ORACLE hints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar base ORACLE hints": {
+      "main": [
+        [
+          {
+            "node": "Injetar ORACLE hints no item_text_llm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Injetar ORACLE hints no item_text_llm": {
+      "main": [
+        [
+          {
+            "node": "Extração bruta (produtos)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "{{CALLERPOLICY_01}}",
+    "errorWorkflow": "{{ID_WORKFLOW_ERRO_01}}"
+  },
+  "versionId": "{{ID_VERSAO_02}}",
+  "id": "{{ID_INTERNO_51}}",
+  "tags": [
+    {
+      "updatedAt": "2026-02-23T21:23:03.635Z",
+      "createdAt": "2026-02-23T21:23:03.635Z",
+      "id": "1ley8Xas4cQBHIvY",
+      "name": "mensageria"
+    },
+    {
+      "updatedAt": "2026-02-23T21:23:03.612Z",
+      "createdAt": "2026-02-23T21:23:03.612Z",
+      "id": "cX3ePcPP676oXeTf",
+      "name": "google-drive"
+    },
+    {
+      "updatedAt": "2026-02-23T21:23:03.626Z",
+      "createdAt": "2026-02-23T21:23:03.626Z",
+      "id": "u18Nwky1bvBetvGo",
+      "name": "production"
+    }
+  ]
+}

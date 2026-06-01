@@ -1,0 +1,83 @@
+{
+  "Produtos": [
+    {
+      "codigo_item": "1",
+      "codigo_item_pai": "1",
+      "subitem": "",
+      "layout": "A",
+      "descricao_cliente": "Painel institucional ficticio para area interna.",
+      "produto": "Painel",
+      "modelo": "ACM",
+      "acabamentos": "Impressao UV e corte eletronico",
+      "dimensoes": {
+        "largura": "1200",
+        "altura": "800",
+        "espessura": "3"
+      },
+      "quantidade": "2",
+      "materias_primas": [
+        {
+          "nome": "ACM branco",
+          "especificacao": "3 mm",
+          "unidade": "chapa",
+          "quantidade": "1"
+        }
+      ],
+      "maquinario_utilizado": [
+        "Impressora UV",
+        "Mesa de corte"
+      ],
+      "contexto_producao": "Item ficticio usado para demonstrar estrutura de produto processado.",
+      "etiquetas": [
+        "Impressao UV",
+        "Corte eletronico"
+      ]
+    },
+    {
+      "codigo_item": "2.1",
+      "codigo_item_pai": "2",
+      "subitem": "2.1",
+      "layout": "B",
+      "descricao_cliente": "Adesivo ficticio para vidro.",
+      "produto": "Adesivo",
+      "modelo": "Vinil transparente",
+      "acabamentos": "Recorte e aplicacao",
+      "dimensoes": {
+        "largura": "500",
+        "altura": "300",
+        "espessura": ""
+      },
+      "quantidade": "4",
+      "materias_primas": [
+        {
+          "nome": "Vinil transparente",
+          "especificacao": "",
+          "unidade": "m2",
+          "quantidade": "1"
+        }
+      ],
+      "maquinario_utilizado": [
+        "Plotter de recorte"
+      ],
+      "contexto_producao": "Subitem ficticio usado para demonstrar decomposicao operacional.",
+      "etiquetas": [
+        "Corte eletronico"
+      ]
+    }
+  ],
+  "ContagemItens": [
+    {
+      "codigo_item_pai": "1",
+      "subitem": "",
+      "produto": "Painel",
+      "quantidade": 2
+    },
+    {
+      "codigo_item_pai": "2",
+      "subitem": "2.1",
+      "produto": "Adesivo",
+      "quantidade": 4
+    }
+  ],
+  "QuantidadeTotalItens": 6
+}

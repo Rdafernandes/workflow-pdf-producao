@@ -1,0 +1,46 @@
+{
+  "skip": false,
+  "os": {
+    "num_os": 12345,
+    "referencia": "Projeto Exemplo",
+    "cliente_nome_original": "Cliente Exemplo Ltda.",
+    "cnpj_cliente": "00.000.000/0000-00",
+    "contato": "Contato Exemplo",
+    "telefone_contato": "(00)00000-0000",
+    "endereco": "Endereco ficticio, 000 - Cidade Exemplo",
+    "obs_os": "Observacoes operacionais ficticias usadas apenas para demonstracao.",
+    "vendedor": "Vendedor Exemplo",
+    "atendente": "Atendente Exemplo",
+    "data_entrega": "2026-03-15",
+    "hora_entrega": "14:00",
+    "data_aprovacao": "2026-03-10",
+    "hora_aprovacao": "09:30",
+    "logistica": "Instalado",
+    "autorizado_por": "Atendente Exemplo",
+    "data_autorizacao": "2026-03-10",
+    "data_entrega_br": "15/03/2026",
+    "data_aprovacao_br": "10/03/2026",
+    "data_autorizacao_br": "10/03/2026",
+    "formato_pdf": "n8n_webhook",
+    "num_itens": 2,
+    "fonte": "workflow_publico_sanitizado"
+  },
+  "itens": [
+    {
+      "num_os": 12345,
+      "item_num": 1,
+      "descricao_cliente": "Painel institucional ficticio para area interna.",
+      "quantidade": 2,
+      "tamanhos": "1200 x 800 x 3",
+      "fonte": "workflow_publico_sanitizado"
+    },
+    {
+      "num_os": 12345,
+      "item_num": 2,
+      "descricao_cliente": "Adesivo ficticio para vidro.",
+      "quantidade": 4,
+      "tamanhos": "500 x 300",
+      "fonte": "workflow_publico_sanitizado"
+    }
+  ]
+}

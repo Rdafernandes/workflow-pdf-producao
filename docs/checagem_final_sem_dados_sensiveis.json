@@ -1,0 +1,70 @@
+{
+  "nome_arquivo": "checagem_final_sem_dados_sensiveis.json",
+  "status_publicacao": "revisado_para_publicacao_publica",
+  "objetivo": "Registrar a checagem final de seguranca, privacidade e coerencia documental do case publico.",
+  "escopo": {
+    "workflow_1": "Entrada por webhook, validacao de remetente, filtro para PDF e chamada do workflow 2.",
+    "workflow_2": "Download do PDF, extracao de texto, estruturacao com IA, organizacao em armazenamento externo e disparo do evento operacional.",
+    "workflow_3": "Distribuicao operacional, atualizacao de planilha, persistencia em banco e criacao de cards de acompanhamento.",
+    "samples": "Exemplos ficticios organizados por estados arquiteturais de entrada, processamento e distribuicao."
+  },
+  "itens_verificados": [
+    {
+      "item": "Nomes de arquivos publicados",
+      "status": "ok",
+      "regra": "Manter apenas arquivos finais sanitizados em workflows/sanitizados/."
+    },
+    {
+      "item": "Segredos e credenciais",
+      "status": "ok",
+      "regra": "Nao publicar tokens reais, IDs de credenciais, chaves de API, webhookIds ou URLs privadas."
+    },
+    {
+      "item": "Telefones, emails e nomes pessoais",
+      "status": "ok",
+      "regra": "Nao publicar dados pessoais em workflows, exemplos, payloads, mensagens ou capturas."
+    },
+    {
+      "item": "Links privados",
+      "status": "ok",
+      "regra": "Nao publicar links privados completos de armazenamento, gestao, webhooks internos ou arquivos operacionais."
+    },
+    {
+      "item": "Dados de clientes",
+      "status": "ok",
+      "regra": "Nao publicar CNPJ/CPF, contatos, enderecos completos ou dados reais de OS nos exemplos."
+    },
+    {
+      "item": "Estrutura tecnica do case",
+      "status": "ok",
+      "regra": "Preservar nomes das etapas, tipos de integracao e logica arquitetural de alto nivel."
+    },
+    {
+      "item": "Capturas de tela",
+      "status": "ok",
+      "regra": "Usar capturas do canvas sem paineis laterais, credenciais, pinData ou dados reais visiveis."
+    },
+    {
+      "item": "Samples publicos",
+      "status": "ok",
+      "regra": "Usar apenas exemplos ficticios derivados da estrutura real dos workflows."
+    }
+  ],
+  "regras_de_publicacao": [
+    "Publicar apenas versoes sanitizadas dos JSONs.",
+    "Manter workflows originais fora do repositorio publico.",
+    "Usar prints da visao do canvas, nao do painel de credenciais.",
+    "Documentar estados arquiteturais relevantes em samples/, nao outputs aleatorios de nodes.",
+    "Descrever arquitetura e resultado sem expor clientes, contatos, hosts privados ou segredos."
+  ],
+  "resultado_esperado": {
+    "github": "Repositorio publico com README, assets, docs, samples e workflows sanitizados.",
+    "portfolio": "Case tecnico com contexto, arquitetura, stack, fluxo operacional e exemplos publicos.",
+    "seguranca": "Sem segredos, dados pessoais ou identificadores operacionais sensiveis visiveis."
+  },
+  "acao_final": [
+    "Conferir se os workflows publicados sao os arquivos sanitizados finais.",
+    "Conferir se os samples usam apenas dados ficticios.",
+    "Conferir se README, docs e links internos renderizam corretamente no GitHub."
+  ]
+}

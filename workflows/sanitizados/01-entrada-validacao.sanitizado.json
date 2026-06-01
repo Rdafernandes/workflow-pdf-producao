@@ -1,0 +1,149 @@
+{
+  "name": "1. PDF de OS | Gateway de processamento para APENAS PDFs no Chronos",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Validar remetente + extrair dados do documento\nconst msg = $input.first().json;\nconst body = msg.body || {};\nconst messages = body.messages || [body];\nconst m = messages[0] || {};\n\n// Whitelist de numeros autorizados\nconst WHITELIST = [\n  '{{TELEFONE_REDACTED_01}}',   // autorizado 01\n  '{{TELEFONE_REDACTED_02}}',   // autorizado 02\n  '{{TELEFONE_REDACTED_03}}',   // autorizado 03\n  '{{TELEFONE_REDACTED_04}}',   // autorizado 04\n  '{{TELEFONE_REDACTED_05}}'    // autorizado 05\n];\n\nconst from = m.from || m.chat_id || '';\nconst fromClean = from.replace('@s.whatsapp.net','').replace('@c.us','');\nconst sender = m.from_name || m.sender?.name || 'Desconhecido';\n\n// Verificar se e documento/PDF\nconst doc = m.document || null;\nconst isDocument = m.type === 'document' || !!doc;\nif (!isDocument || !doc) return [];\n\nconst filename = doc.filename || doc.file_name || 'documento.pdf';\nif (!filename.toLowerCase().endsWith('.pdf')) return [];\n\nconst mediaUrl = doc.link || doc.url || null;\nconst mediaId = doc.id || null;\n\n// normaliza: remove tudo que não for dígito\nconst normalize = (s) => String(s || '').replace(/\\D/g, '');\n\n// formato real sanitizado: {{TELEFONE_REDACTED_01}}\nconst fromRaw = m.from || '';\nconst fromDigits = normalize(fromRaw);\n\n// WHITELIST deve estar com dígitos puros\nconst allowed = WHITELIST.map(normalize);\n\nconst isAllowed = allowed.includes(fromDigits);\n\n// normaliza nome do arquivo: lowercase + sem acento\nconst filenameNormalized = String(filename || '')\n  .toLowerCase()\n  .normalize('NFD')\n  .replace(/[\\u0300-\\u036f]/g, '');\n\n// valida padrão exato:\n// ordem_de_servico_{numero}_{cliente}.pdf\nconst isTargetFile = /^ordem_de_servico_\\d+_.+\\.pdf$/.test(filenameNormalized);\n\nreturn [{\n  json: {\n    from: fromClean,\n    sender,\n    chatId: m.chat_id || from,\n    filename,\n    filename_normalized: filenameNormalized,\n    mediaUrl,\n    mediaId,\n    caption: m.caption || '',\n    timestamp: m.timestamp || Date.now(),\n\n    is_allowed: isAllowed,\n    is_target_file: isTargetFile,\n\n    from_raw: fromRaw,\n    from_digits: fromDigits,\n  }\n}];"
+      },
+      "id": "{{ID_INTERNO_01}}",
+      "name": "Validar Remetente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-entrada-pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -336,
+        -32
+      ],
+      "id": "{{ID_INTERNO_02}}",
+      "name": "Webhook",
+      "webhookId": "{{ID_WEBHOOK_N8N_01}}"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "{{ID_INTERNO_03}}",
+              "leftValue": "={{$json.is_allowed}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "{{ID_INTERNO_04}}",
+              "leftValue": "={{ $json.is_target_file }}",
+              "rightValue": "Ordem_de_serviço",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        48,
+        -32
+      ],
+      "id": "{{ID_INTERNO_05}}",
+      "name": "Remetente é válido?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "{{VALUE_01}}",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/{{ID_WORKFLOW_N8N_02}}",
+          "cachedResultName": "2. PDF de OS | PDF para Chronos -> Google Drive (_{{NOME_PASTA_OPERACIONAL}})"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        -144
+      ],
+      "id": "{{ID_INTERNO_06}}",
+      "name": "Call '2. PDF de OS | PDF para Chronos -> Google Drive (_{{NOME_PASTA_OPERACIONAL}})'"
+    }
+  ],
+  "connections": {
+    "Validar Remetente": {
+      "main": [
+        [
+          {
+            "node": "Remetente é válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validar Remetente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remetente é válido?": {
+      "main": [
+        [
+          {
+            "node": "Call '2. PDF de OS | PDF para Chronos -> Google Drive (_{{NOME_PASTA_OPERACIONAL}})'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "{{ID_VERSAO_01}}",
+  "id": "{{ID_INTERNO_07}}",
+  "tags": []
+}

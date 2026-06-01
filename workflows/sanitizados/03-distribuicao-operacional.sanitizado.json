@@ -1,0 +1,938 @@
+{
+  "name": "3. PDF de OS | OS's processadas -> grupo 🌵🏭 Produção | Geral + 🌵 | Controle de Operações & Logística",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const payload = $json.body ?? $json;\n\nconst cab = payload.cabecalho ?? {};\nconst produtos = payload.produtos?.Produtos ?? [];\n\nfunction parseBRDate(str) {\n  if (!str || typeof str !== 'string') return null;\n  const [dd, mm, yyyy] = str.split('/');\n  if (!dd || !mm || !yyyy) return null;\n  return new Date(Number(yyyy), Number(mm) - 1, Number(dd), 12, 0, 0);\n}\n\nfunction formatDateShort(date) {\n  const dd = String(date.getDate()).padStart(2, '0');\n  const mm = String(date.getMonth() + 1).padStart(2, '0');\n  const yy = String(date.getFullYear()).slice(-2);\n  return `${dd}/${mm}/${yy}`;\n}\n\nfunction getWeekdayPt(date) {\n  const dias = [\n    'domingo',\n    'segunda-feira',\n    'terça-feira',\n    'quarta-feira',\n    'quinta-feira',\n    'sexta-feira',\n    'sábado'\n  ];\n  return dias[date.getDay()];\n}\n\nfunction diffInDays(fromDate, toDate) {\n  const a = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate(), 12, 0, 0);\n  const b = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate(), 12, 0, 0);\n  return Math.round((b - a) / 86400000);\n}\n\nfunction getPrazoText(dataEntrega) {\n  if (!dataEntrega) return '';\n  const hoje = new Date();\n  const diff = diffInDays(hoje, dataEntrega);\n  const weekday = getWeekdayPt(dataEntrega);\n  const dataFmt = formatDateShort(dataEntrega);\n\n  let sufixo = '';\n  if (diff < 0) {\n    const abs = Math.abs(diff);\n    sufixo = `(Atrasado há ${abs} ${abs === 1 ? 'dia' : 'dias'})`;\n  } else if (diff === 0) {\n    sufixo = '(Hoje)';\n  } else if (diff === 1) {\n    sufixo = '(Amanhã)';\n  } else {\n    sufixo = `(Daqui a ${diff} dias)`;\n  }\n\n  return `${weekday}, ${dataFmt} ${sufixo}`;\n}\n\nfunction getPrioridade(diff) {\n  if (diff <= 1) return '🔴 *URGENTE*';\n  if (diff >= 2 && diff <= 3) return '🟠 *ALTA*';\n  if (diff >= 4 && diff <= 5) return '🟡 *MÉDIA*';\n  return '🟢 *NORMAL*';\n}\n\nfunction cleanText(str) {\n  return String(str ?? '')\n    .replace(/[“”\"]/g, '')\n    .replace(/\\s+/g, ' ')\n    .replace(/\\s+\\)/g, ')')\n    .replace(/\\(\\s+/g, '(')\n    .trim();\n}\n\nfunction formatQty(qtd) {\n  const texto = String(qtd ?? '').trim();\n  return texto || '1';\n}\n\nconst dataEntrega = parseBRDate(cab['Data de entrega']);\nconst hoje = new Date();\nconst diffDias = dataEntrega ? diffInDays(hoje, dataEntrega) : null;\n\nconst prazoLinha = dataEntrega ? getPrazoText(dataEntrega) : 'Sem data de entrega';\nconst prioridadeLinha = diffDias === null ? '🟢 *NORMAL*' : getPrioridade(diffDias);\n\nconst itensTexto = produtos.map((item) => {\n  const qtd = formatQty(item.quantidade);\n  const nome = cleanText(item.nome_item_mensagem || '') || 'Item sem descrição';\n\n  return `▪️${qtd}x ${nome}`;\n}).join('\\n');\n\nconst osNum = cleanText(payload.os_num || cab['Nº OS']);\nconst cliente = cleanText(cab['Cliente']);\nconst ref = cleanText(cab['Ref. (nome do trabalho)']);\nconst orcamentista = cleanText(cab['Orçamentista/atendente']);\nconst vendedor = cleanText(cab['Vendedor']);\n\nconst driveUrl = payload.folder_id\n  ? '{{URL_REDACTED_DRIVE_FOLDER}}'\n  : '';\n\nconst trelloUrl = '{{URL_REDACTED_TRELLO_BOARD}}';\n\nconst titulo = [`#${osNum}`, cliente, ref].filter(Boolean).join(' | ');\n\nconst mensagemWhatsApp = [\n  '━━━━━━━━━━━━━━━━━━',\n  '📌 *ORDEM DE SERVIÇO REGISTRADA*',\n  `*${titulo}*`,\n  '━━━━━━━━━━━━━━━━━━',\n  '',\n  `📅 *Prazo:* *${prazoLinha}*`,\n  `*Prioridade:* ${prioridadeLinha}`,\n  '',\n  `📑 *Orçamentista:* ${orcamentista || '-'}`,\n  `🤝 *Vendedor:* ${vendedor || '-'}`,\n  '',\n  '📦 *Itens:*',\n  itensTexto || '▪️Sem itens',\n  '',\n  `📁 *Arquivos:* ${driveUrl}`,\n  `🗂️ *Trello:* ${trelloUrl}`,\n  '',\n  '━━━━━━━━━━━━━━━━━━'\n].join('\\n');\n\nreturn {\n  json: {\n    ...$json,\n    prazo_linha: prazoLinha,\n    prioridade_linha: prioridadeLinha,\n    dias_para_entrega: diffDias,\n    itens_texto: itensTexto,\n    drive_url: driveUrl,\n    trello_url: trelloUrl,\n    mensagem_whatsapp: mensagemWhatsApp\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        -304
+      ],
+      "id": "{{ID_INTERNO_52}}",
+      "name": "Montar mensagem WhatsApp"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body ?? {};\nconst produtos = body.produtos?.Produtos ?? [];\n\nfunction cleanText(str) {\n  return String(str ?? '')\n    .replace(/[“”\"]/g, '')\n    .replace(/[‘’']/g, '')\n    .replace(/\\?/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .replace(/\\(\\s+/g, '(')\n    .replace(/\\s+\\)/g, ')')\n    .replace(/\\[\\s+/g, '[')\n    .replace(/\\s+\\]/g, ']')\n    .trim();\n}\n\nfunction normalizeBareWord(word) {\n  return String(word ?? '')\n    .toLowerCase()\n    .replace(/^[^a-zà-ÿ]+/i, '')\n    .replace(/[^a-zà-ÿ]+$/i, '');\n}\n\nfunction capitalizeToken(token) {\n  const lower = token.toLowerCase();\n\n  return lower.replace(/^([^a-zà-ÿ]*)([a-zà-ÿ])/i, (_, prefix, first) => {\n    return prefix + first.toUpperCase();\n  });\n}\n\nfunction toSmartTitle(str) {\n  const stopWords = new Set([\n    'de', 'da', 'do', 'das', 'dos', 'e', 'em', 'na', 'no', 'nas', 'nos',\n    'para', 'por', 'com', 'sem', 'a', 'o', 'as', 'os'\n  ]);\n\n  return cleanText(str)\n    .split(' ')\n    .map((word, index) => {\n      if (!word) return word;\n\n      const bare = normalizeBareWord(word);\n\n      if (index > 0 && stopWords.has(bare)) {\n        return word.toLowerCase();\n      }\n\n      return capitalizeToken(word);\n    })\n    .join(' ')\n    .replace(/\\(\\s+/g, '(')\n    .replace(/\\s+\\)/g, ')')\n    .trim();\n}\n\nfunction removeItemPrefix(texto) {\n  return texto.replace(/^item\\s*\\d+(?:\\.\\d+)?\\s*[-:–]?\\s*/i, '').trim();\n}\n\nfunction splitMultiDeliverables(texto) {\n  return texto\n    .split(/\\s+\\+\\s+|\\s*;\\s*/i)\n    .map(t => cleanText(t))\n    .filter(Boolean);\n}\n\nfunction pickSubitemSegment(texto, subitem) {\n  const match = String(subitem ?? '').match(/\\.(\\d+)$/);\n  if (!match) return texto;\n\n  const idx = Number(match[1]) - 1;\n  const partes = splitMultiDeliverables(texto);\n\n  if (partes.length > 1 && partes[idx]) {\n    return partes[idx];\n  }\n\n  return texto;\n}\n\nfunction cutAtPipe(texto) {\n  const idx = texto.indexOf('|');\n  if (idx >= 0) {\n    return texto.slice(0, idx).trim();\n  }\n  return texto;\n}\n\nfunction cutAtFirstMarker(texto) {\n  const markers = [\n    /\\bverificar\\b/i,\n    /\\bnecessidade\\b/i,\n    /\\bsendo\\b/i,\n    /\\bobserva(?:cao|ção|coes|ções)\\b/i,\n    /\\bobs\\b/i,\n    /\\blocal\\b/i,\n    /\\btamanho\\b/i,\n    /\\btamanhos\\b/i,\n    /\\bformato\\b/i,\n    /\\bimpresso\\b/i,\n    /\\bimpressa\\b/i,\n    /\\bproduzido\\b/i,\n    /\\bproduzida\\b/i,\n    /\\bacabamentos?\\b/i\n  ];\n\n  let corte = texto.length;\n\n  for (const regex of markers) {\n    const match = regex.exec(texto);\n    if (match && match.index >= 0 && match.index < corte) {\n      corte = match.index;\n    }\n  }\n\n  return texto.slice(0, corte).trim();\n}\n\nfunction removeQtyNoise(texto) {\n  return texto\n    .replace(/\\b\\d+\\s*unidades?\\b/gi, ' ')\n    .replace(/\\b\\d+\\s*x\\b/gi, ' ')\n    .replace(/\\s*[-–:|]+\\s*$/g, '')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction fallbackName(item) {\n  const produto = cleanText(item.produto);\n  const modelo = cleanText(item.modelo);\n\n  if (item.subitem) {\n    return cleanText(modelo || produto || 'Subitem');\n  }\n\n  return cleanText(produto || modelo || 'Item');\n}\n\nfunction buildNomeItem(item) {\n  let texto = cleanText(item.descricao_cliente);\n\n  texto = removeItemPrefix(texto);\n\n  if (item.subitem) {\n    texto = pickSubitemSegment(texto, item.subitem);\n  }\n\n  // REGRA IMPORTANTE:\n  // se houver pipe, tudo após ele é detalhe técnico/observação\n  texto = cutAtPipe(texto);\n\n  texto = cutAtFirstMarker(texto);\n  texto = removeQtyNoise(texto);\n\n  texto = cleanText(texto)\n    .replace(/\\s*[:\\-–|]+\\s*$/g, '')\n    .trim();\n\n  if (!texto || texto.length < 3) {\n    texto = fallbackName(item);\n  }\n\n  return toSmartTitle(texto);\n}\n\nconst produtosTratados = produtos.map((item) => ({\n  ...item,\n  nome_item_mensagem: buildNomeItem(item)\n}));\n\nreturn {\n  json: {\n    ...$json,\n    body: {\n      ...body,\n      produtos: {\n        ...(body.produtos ?? {}),\n        Produtos: produtosTratados\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -304
+      ],
+      "id": "{{ID_INTERNO_53}}",
+      "name": "Tratar descricao_cliente"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{URL_REDACTED_03}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{TOKEN_API_MENSAGERIA_REMOVIDO}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  to: \"{{EMAIL_REDACTED_02}}\",\n  no_link_preview: true,\n  body: $json.mensagem_whatsapp\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        656,
+        -304
+      ],
+      "id": "{{ID_INTERNO_54}}",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $json.body ?? $json;\nconst cab = payload.cabecalho ?? {};\n\nfunction cleanText(str) {\n  return String(str ?? '').trim();\n}\n\nfunction mapCategoria(tipoOS) {\n  const valor = cleanText(tipoOS).toLowerCase();\n\n  if (valor === 'instalado') return 'Instalação';\n  if (valor === 'entrega própria') return 'Entrega';\n  if (valor === 'cliente retira') return 'Retirada';\n\n  return '';\n}\n\nreturn {\n  json: {\n    ...$json,\n    responsavel_planilha: '{{RESPONSAVEL_EXEMPLO}}',\n    cliente_planilha: cleanText(cab['Cliente']),\n    demanda_planilha: cleanText(cab['Ref. (nome do trabalho)']),\n    status_planilha: 'ATENÇÃO! DEFINIR STATUS',\n    transporte_planilha: 'ATENÇÃO! DEFINIR TRANSPORTE',\n    horario_planilha: cleanText(cab['Hora de entrega']),\n    categoria_planilha: mapCategoria(cab['Tipo de OS']),\n    entrega_planilha: cleanText(cab['Data de entrega']),\n    instalador_planilha: 'ATENÇÃO! DEFINIR INSTALADOR',\n    os_planilha: cleanText(cab['Nº OS'])\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -144
+      ],
+      "id": "{{ID_INTERNO_55}}",
+      "name": "Preparar linha planilha"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "{{VALUE_03}}",
+          "mode": "list",
+          "cachedResultName": "🌵 | Controle de Operações & Logística",
+          "cachedResultUrl": "{{URL_REDACTED_08}}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "CENTRAL",
+          "cachedResultUrl": "{{URL_REDACTED_09}}"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        416,
+        -144
+      ],
+      "id": "{{ID_INTERNO_56}}",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "{{ID_CREDENCIAL_GOOGLE_SHEETS_01}}",
+          "name": "{{GOOGLE_SHEETS_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const linhaNova = $('Preparar linha planilha').first().json;\nconst rows = $input.all().map(item => item.json);\n\nconst firstDataRow = 2;\n\nfunction hasValue(v) {\n  return String(v ?? '').trim() !== '';\n}\n\n// Considera ocupada somente a linha que já tem OS preenchida\nconst occupiedRows = rows\n  .filter(r => hasValue(r.OS))\n  .map(r => Number(r.row_number))\n  .filter(n => Number.isInteger(n) && n >= firstDataRow)\n  .sort((a, b) => a - b);\n\nlet targetRow = firstDataRow;\n\nfor (const rowNum of occupiedRows) {\n  if (rowNum === targetRow) {\n    targetRow++;\n    continue;\n  }\n\n  if (rowNum > targetRow) {\n    break;\n  }\n}\n\nreturn [\n  {\n    json: {\n      ...linhaNova,\n      target_row_number: targetRow\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        -144
+      ],
+      "id": "{{ID_INTERNO_57}}",
+      "name": "Encontrar primeira linha vazia"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "{{VALUE_03}}",
+          "mode": "list",
+          "cachedResultName": "🌵 | Controle de Operações & Logística",
+          "cachedResultUrl": "{{URL_REDACTED_08}}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "CENTRAL",
+          "cachedResultUrl": "{{URL_REDACTED_09}}"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Responsável": "{{RESPONSAVEL_EXEMPLO}}",
+            "CLIENTE": "={{ $json.cliente_planilha }}",
+            "DEMANDA": "={{ $json.demanda_planilha }}",
+            "Status": "ATENÇÃO! DEFINIR STATUS",
+            "TRANSPORTE": "ATENÇÃO! DEFINIR TRANSPORTE",
+            "HORÁRIO": "={{ $json.horario_planilha }}",
+            "Categoria": "={{ $json.categoria_planilha }}",
+            "ENTREGA": "={{ $json.entrega_planilha }}",
+            "Instalador": "ATENÇÃO! DEFINIR INSTALADOR",
+            "OS": "={{ $json.os_planilha }}",
+            "row_number": "={{ $json.target_row_number }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Responsável",
+              "displayName": "Responsável",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CLIENTE",
+              "displayName": "CLIENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "DEMANDA",
+              "displayName": "DEMANDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TRANSPORTE",
+              "displayName": "TRANSPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "HORÁRIO",
+              "displayName": "HORÁRIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Categoria",
+              "displayName": "Categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ENTREGA",
+              "displayName": "ENTREGA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Instalador",
+              "displayName": "Instalador",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "OS",
+              "displayName": "OS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ENDEREÇO ",
+              "displayName": "ENDEREÇO ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CONTATO",
+              "displayName": "CONTATO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DESTINATÁRIO ",
+              "displayName": "DESTINATÁRIO ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "OBSERVAÇÕES ",
+              "displayName": "OBSERVAÇÕES ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ANÁLISE E/OU SUGESTÕES PÓS ENTREGA",
+              "displayName": "ANÁLISE E/OU SUGESTÕES PÓS ENTREGA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vendedor",
+              "displayName": "Vendedor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Orçamentista",
+              "displayName": "Orçamentista",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Claude",
+              "displayName": "Claude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Não editar",
+              "displayName": "Não editar",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Não editar (Usado na mensagem para o instalador)",
+              "displayName": "Não editar (Usado na mensagem para o instalador)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Não editar (usado no Make <> Trello)",
+              "displayName": "Não editar (usado no Make <> Trello)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED",
+          "locationDefine": {
+            "values": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        -144
+      ],
+      "id": "{{ID_INTERNO_58}}",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "{{ID_CREDENCIAL_GOOGLE_SHEETS_01}}",
+          "name": "{{GOOGLE_SHEETS_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const payload = $json.body ?? $json;\nconst cab = payload.cabecalho ?? {};\nconst produtos = payload.produtos?.Produtos ?? [];\n\nfunction clean(str) {\n  return String(str ?? '').trim() || null;\n}\n\nfunction parseBRDate(str) {\n  if (!str || typeof str !== 'string') return null;\n  const parts = str.split('/');\n  if (parts.length !== 3) return null;\n  const [dd, mm, yyyy] = parts;\n  return `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;\n}\n\nfunction extractNumOS(raw) {\n  const s = String(raw ?? '').trim();\n  const m = s.match(/(\\d+)/);\n  return m ? Number(m[1]) : null;\n}\n\nfunction formatDimensoes(dim) {\n  if (!dim) return null;\n  if (typeof dim === 'string') return dim || null;\n  const l = dim.largura || dim.width || '';\n  const a = dim.altura || dim.height || '';\n  if (!l && !a) return null;\n  const e = dim.espessura || dim.depth || '';\n  return e ? `${l} x ${a} x ${e}` : `${l} x ${a}`;\n}\n\nconst numOs = extractNumOS(cab['N\\u00ba OS'] ?? cab['N OS'] ?? cab['num_os']);\nif (!numOs) {\n  return { json: { skip: true, reason: 'sem num_os' } };\n}\n\nfunction formatDateBR(dateStr) {\n  if (!dateStr) return null;\n\n  // já veio em YYYY-MM-DD\n  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(dateStr)) {\n    const [y, m, d] = dateStr.split('-');\n    return `${d}/${m}/${y}`;\n  }\n\n  // já veio em DD/MM/YYYY\n  if (/^\\d{2}\\/\\d{2}\\/\\d{4}$/.test(dateStr)) {\n    return dateStr;\n  }\n\n  return dateStr;\n}\n\nconst osRow = {\n  num_os: numOs,\n  referencia: clean(cab['Ref. (nome do trabalho)'] ?? cab['referencia']),\n  cliente_nome_original: clean(cab['Cliente'] ?? cab['cliente']),\n  cnpj_cliente: clean(cab['CNPJ/CPF'] ?? cab['cnpj_cliente']),\n  contato: clean(cab['Contato'] ?? cab['contato']),\n  telefone_contato: clean(cab['Telefone do contato'] ?? cab['telefone_contato']),\n  endereco: clean(cab['Local de instalação'] ?? cab['endereco']),\n  obs_os: clean(cab['Observações da O.S.'] ?? cab['obs_os']),\n  vendedor: clean(cab['Vendedor'] ?? cab['vendedor']),\n  atendente: clean(cab['Atendente'] ?? cab['atendente'] ?? cab['Orçamentista/atendente']),\n  data_entrega: parseBRDate(cab['Data de entrega']) ?? clean(cab['data_entrega']),\n  hora_entrega: clean(cab['Hora de entrega']) ?? clean(cab['hora_entrega']),\n  data_aprovacao: parseBRDate(cab['Data de aprovação'] ?? cab['Data de aprovacao']) ?? clean(cab['data_aprovacao']),\n  hora_aprovacao: clean(cab['Hora de aprovação']) ?? clean(cab['hora_aprovacao']),\n  logistica: clean(cab['Tipo de OS'] ?? cab['logistica']),\n  autorizado_por: clean(cab['Autorizado por'] ?? cab['autorizado_por']),\n  data_autorizacao: parseBRDate(cab['Data de aprovação'] ?? cab['Data de autorizacao']) ?? clean(cab['data_autorizacao']),\n  data_entrega_br: formatDateBR(parseBRDate(cab['Data de entrega']) ?? clean(cab['data_entrega'])),\n  data_aprovacao_br: formatDateBR(parseBRDate(cab['Data de aprovação']) ?? cab['Data de aprovacao'] ?? clean(cab['data_aprovacao'])),\n  data_autorizacao_br: formatDateBR(parseBRDate(cab['Data de aprovação'] ?? cab['Data de autorizacao']) ?? clean(cab['data_autorizacao'])),\n  formato_pdf: 'n8n_webhook',\n  num_itens: produtos.length,\n  fonte: 'chronos'\n};\n\nconst itens = produtos.map((p, idx) => {\n  const sub = String(p.subitem ?? '').trim();\n  const itemNum = sub ? (Number(sub) || (idx + 1)) : (idx + 1);\n  return {\n    num_os: numOs,\n    item_num: itemNum,\n    descricao_cliente: clean(p.descricao_cliente ?? p.nome_item_mensagem),\n    quantidade: p.quantidade ? Number(p.quantidade) : null,\n    tamanhos: formatDimensoes(p.dimensoes) ?? clean(p.tamanhos ?? p.medidas),\n    fonte: 'chronos'\n  };\n});\n\nreturn {\n  json: {\n    skip: false,\n    os: osRow,\n    itens: itens\n  }\n};"
+      },
+      "id": "{{ID_INTERNO_59}}",
+      "name": "Preparar upsert Supabase",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "{{ID_INTERNO_60}}",
+              "name": "{{NAME_01}}",
+              "value": "={{ ($json.os.cnpj_cliente || \"\").toString().replace(/\\D/g, \"\") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        384,
+        336
+      ],
+      "id": "{{ID_INTERNO_61}}",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "cliente",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "documento",
+              "keyValue": "={{$json.documento_cliente_limpo}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        592,
+        336
+      ],
+      "id": "{{ID_INTERNO_62}}",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "{{ID_CREDENCIAL_SUPABASE_01}}",
+          "name": "{{SUPABASE_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "{{UUID_PARCIAL_REDACTED_01}}-{{TELEFONE_REDACTED_06}}",
+              "name": "{{NAME_02}}",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        784,
+        336
+      ],
+      "id": "{{ID_INTERNO_63}}",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        976,
+        208
+      ],
+      "id": "{{ID_INTERNO_64}}",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "function toTimestamptz(dateStr, timeStr, offset = '-03:00') {\n  if (!dateStr || !timeStr) return null;\n\n  const date = String(dateStr).trim();\n  const time = String(timeStr).trim();\n\n  // aceita HH:mm ou HH:mm:ss\n  const timeFull = /^\\d{2}:\\d{2}$/.test(time) ? `${time}:00` : time;\n\n  // entrada esperada: YYYY-MM-DD\n  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) {\n    return `${date}T${timeFull}${offset}`;\n  }\n\n  // fallback caso venha em DD/MM/YYYY\n  if (/^\\d{2}\\/\\d{2}\\/\\d{4}$/.test(date)) {\n    const [d, m, y] = date.split('/');\n    return `${y}-${m}-${d}T${timeFull}${offset}`;\n  }\n\n  return null;\n}\n\nreturn items.map(item => {\n  const j = item.json;\n  const os = j.os || {};\n\n  return {\n    json: {\n      ...j,\n      data_aprovacao_ts: toTimestamptz(os.data_aprovacao, os.hora_aprovacao),\n      data_entrega_ts: toTimestamptz(os.data_entrega, os.hora_entrega),\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        208
+      ],
+      "id": "{{ID_INTERNO_65}}",
+      "name": "Preparar timestamps Supabase"
+    },
+    {
+      "parameters": {
+        "tableId": "{{ID_TABELA_SUPABASE_04}}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "referencia",
+              "fieldValue": "={{ $json.os.referencia }}"
+            },
+            {
+              "fieldId": "{{FIELDID_01}}",
+              "fieldValue": "={{ $json.os.cliente_nome_original }}"
+            },
+            {
+              "fieldId": "cnpj_cliente",
+              "fieldValue": "={{ $json.os.cnpj_cliente }}"
+            },
+            {
+              "fieldId": "cliente_id",
+              "fieldValue": "={{ $json.cliente_id_resolvido }}"
+            },
+            {
+              "fieldId": "contato_nome",
+              "fieldValue": "={{ $json.os.contato }}"
+            },
+            {
+              "fieldId": "contato_telefone",
+              "fieldValue": "={{ $json.os.telefone_contato }}"
+            },
+            {
+              "fieldId": "num_os",
+              "fieldValue": "={{ $json.os.num_os }}"
+            },
+            {
+              "fieldId": "vendedor",
+              "fieldValue": "={{ $json.os.vendedor }}"
+            },
+            {
+              "fieldId": "atendente",
+              "fieldValue": "={{ $json.os.atendente }}"
+            },
+            {
+              "fieldId": "data_entrega",
+              "fieldValue": "={{ $json.data_entrega_ts }}"
+            },
+            {
+              "fieldId": "data_aprovacao",
+              "fieldValue": "={{ $json.data_aprovacao_ts }}"
+            },
+            {
+              "fieldId": "endereco",
+              "fieldValue": "={{ $json.os.endereco }}"
+            },
+            {
+              "fieldId": "logistica",
+              "fieldValue": "={{ $json.os.logistica }}"
+            },
+            {
+              "fieldId": "num_itens",
+              "fieldValue": "={{ $json.os.num_itens }}"
+            },
+            {
+              "fieldId": "formato_pdf",
+              "fieldValue": "={{ $json.os.formato_pdf }}"
+            },
+            {
+              "fieldId": "fonte",
+              "fieldValue": "origem_pdf_sanitizada"
+            },
+            {
+              "fieldId": "autorizado_por",
+              "fieldValue": "={{ $json.os.autorizado_por }}"
+            },
+            {
+              "fieldId": "data_autorizacao",
+              "fieldValue": "={{ $json.data_aprovacao_ts }}"
+            },
+            {
+              "fieldId": "observacoes",
+              "fieldValue": "={{ $json.os.obs_os }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        208
+      ],
+      "id": "{{ID_INTERNO_66}}",
+      "name": "Persistir OS no Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "{{ID_CREDENCIAL_SUPABASE_01}}",
+          "name": "{{SUPABASE_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "{{ID_TABELA_SUPABASE_05}}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "num_os",
+              "fieldValue": "={{ $json.num_os }}"
+            },
+            {
+              "fieldId": "item_num",
+              "fieldValue": "={{ $json.item_num }}"
+            },
+            {
+              "fieldId": "descricao_cliente",
+              "fieldValue": "={{ $json.descricao_cliente }}"
+            },
+            {
+              "fieldId": "observacoes_item",
+              "fieldValue": "={{ $json.observacoes_item }}"
+            },
+            {
+              "fieldId": "quantidade",
+              "fieldValue": "={{ $json.quantidade }}"
+            },
+            {
+              "fieldId": "tamanhos",
+              "fieldValue": "={{ $json.tamanhos }}"
+            },
+            {
+              "fieldId": "subitens",
+              "fieldValue": "={{ JSON.stringify($json.subitens) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        448,
+        560
+      ],
+      "id": "{{ID_INTERNO_67}}",
+      "name": "Persistir itens e subitens no Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "{{ID_CREDENCIAL_SUPABASE_01}}",
+          "name": "{{SUPABASE_CREDENTIAL_NAME}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function splitDescricaoObservacao(texto) {\n  if (!texto) {\n    return {\n      descricao_cliente: null,\n      observacoes_item: null,\n    };\n  }\n\n  const s = String(texto).replace(/\\s+/g, ' ').trim();\n\n  const gatilhos = [\n    /\\bVERIFICAR\\b/i,\n    /\\bNECESSIDADE\\s*:/i,\n    /\\bOBS\\b\\s*[:.-]/i,\n    /\\bOBSERVA(C|Ç)(A|Ã)O\\b/i,\n    /\\bCONFIRMAR\\b/i,\n    /\\bMEDIR\\b/i,\n    /\\bCHECAR\\b/i,\n    /\\bNA CASA\\b/i,\n    /\\bNO LOCAL\\b/i,\n    /\\bINSTALA(C|Ç)(A|Ã)O\\b/i,\n    /\\bDESINSTALA(C|Ç)(A|Ã)O\\b/i,\n  ];\n\n  let pos = -1;\n\n  for (const rgx of gatilhos) {\n    const m = s.match(rgx);\n    if (m && m.index !== undefined) {\n      if (pos === -1 || m.index < pos) pos = m.index;\n    }\n  }\n\n  if (pos === -1) {\n    return {\n      descricao_cliente: s,\n      observacoes_item: null,\n    };\n  }\n\n  return {\n    descricao_cliente: s.slice(0, pos).trim().replace(/[| -]+$/, '').trim(),\n    observacoes_item: s.slice(pos).trim(),\n  };\n}\n\nfunction toNumberOrNull(v) {\n  if (v === undefined || v === null || v === '') return null;\n  const n = Number(String(v).replace(',', '.').replace(/[^\\d.-]/g, ''));\n  return Number.isFinite(n) ? n : null;\n}\n\nfunction montarTamanho(dim) {\n  if (!dim || typeof dim !== 'object') return null;\n\n  const partes = [\n    dim.largura,\n    dim.altura,\n    dim.espessura,\n  ]\n    .map(v => (v ?? '').toString().trim())\n    .filter(v => v !== '');\n\n  return partes.length ? partes.join(' x ') : null;\n}\n\nconst payload = $('Webhook').first().json.body;\nconst produtos = payload?.produtos?.Produtos ?? [];\nconst numOs = toNumberOrNull(payload?.os_num ?? payload?.cabecalho?.['Nº OS']);\n\nconst descricaoPaiMap = new Map();\n\nfor (const p of produtos) {\n  const codigoPai = String(p.codigo_item_pai ?? p.codigo_item ?? '').trim();\n  const codigoItem = String(p.codigo_item ?? '').trim();\n  const temSubitem = String(p.subitem ?? '').trim() !== '';\n\n  if (!descricaoPaiMap.has(codigoPai)) {\n    descricaoPaiMap.set(codigoPai, p.descricao_cliente ?? null);\n  }\n\n  // se existir item pai \"4\" explícito, prioriza ele como descrição base\n  if (!temSubitem && codigoItem === codigoPai && (p.descricao_cliente ?? '').trim()) {\n    descricaoPaiMap.set(codigoPai, p.descricao_cliente);\n  }\n}\n\nreturn produtos.map((p) => {\n  const codigoItem = String(p.codigo_item ?? '').trim();\n  const codigoPai = String(p.codigo_item_pai ?? p.codigo_item ?? '').trim();\n  const subitem = String(p.subitem ?? '').trim();\n\n  const itemNumPai = Number(codigoPai.split('.')[0]);\n\n  const descricaoBase = descricaoPaiMap.get(codigoPai) ?? p.descricao_cliente ?? null;\n  const partesTexto = splitDescricaoObservacao(descricaoBase);\n\n  return {\n    json: {\n      num_os: numOs,\n      item_num: Number.isFinite(itemNumPai) ? itemNumPai : null,\n      descricao_cliente: partesTexto.descricao_cliente,\n      observacoes_item: partesTexto.observacoes_item,\n      quantidade: toNumberOrNull(p.quantidade),\n      tamanhos: montarTamanho(p.dimensoes),\n      subitens: {\n        codigo_item: codigoItem || null,\n        codigo_item_pai: codigoPai || null,\n        produto: p.produto ?? null,\n        modelo: p.modelo ?? null,\n        acabamentos: p.acabamentos ?? null,\n        largura: p?.dimensoes?.largura ?? null,\n        altura: p?.dimensoes?.altura ?? null,\n        espessura: p?.dimensoes?.espessura ?? null,\n        materias_primas: Array.isArray(p.materias_primas) ? p.materias_primas : [],\n      },\n      fonte: 'chronos',\n    },\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        560
+      ],
+      "id": "{{ID_INTERNO_68}}",
+      "name": "Preparar linhas itens/subitens BD"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-distribuicao-os",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -96,
+        16
+      ],
+      "id": "{{ID_INTERNO_69}}",
+      "name": "Webhook",
+      "webhookId": "{{ID_WEBHOOK_N8N_02}}"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body ?? $json;\nconst produtos = body.produtos?.Produtos ?? [];\n\nreturn produtos.map((produto, index) => {\n  return {\n    json: {\n      os_num: body.os_num,\n      folder_id: body.folder_id,\n      folder_name: body.folder_name,\n      cache_id: body.cache_id,\n      cabecalho: body.cabecalho,\n      produto,\n      trello_card_index: index + 1,\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        16
+      ],
+      "id": "{{ID_INTERNO_70}}",
+      "name": "Explodir itens Trello"
+    },
+    {
+      "parameters": {
+        "listId": "{{ID_LISTA_TRELLO_01}}",
+        "name": "=OS {{ $json.cabecalho['Nº OS'] }} | {{ $json.cabecalho.Cliente }} | {{ $json.cabecalho['Ref. (nome do trabalho)'] }} | Item {{ $json.produto.codigo_item }} | {{ $json.produto.quantidade }}x {{ $json.produto.produto }}",
+        "description": "=📌 OS: {{ $json.cabecalho['Nº OS'] }}\n\n📌 Cliente: {{ $json.cabecalho.Cliente }}\n\n📌 Projeto: {{ $json.cabecalho['Ref. (nome do trabalho)'] }}\n\n📌 Categoria: {{ ($json.cabecalho['Tipo de OS'] || '').trim() === 'Instalado' ? 'Instalação' : ($json.cabecalho['Tipo de OS'] || '').trim() }}\n\n📌 Produto: {{ $json.produto.produto }}\n\n📌 Modelo: {{ $json.produto.modelo }}\n\n📌 Material:  {{ $json.produto.materias_primas[0].nome }} {{ $json.produto.materias_primas[0].especificacao }}\n\n📌 Dimensão: {{ [$json.produto.dimensoes?.largura, $json.produto.dimensoes?.altura, $json.produto.dimensoes?.espessura].filter(v => v !== undefined && v !== null && String(v).trim() !== '').join(' x ') }}\n\n📌 Quantidade: {{ $json.produto.quantidade }}\n\n📌 Máquina/Processo: {{ ($json.produto.maquinario_utilizado).join(', ') }}\n\n📌 Acabamento: {{ $json.produto.acabamentos }}\n\n📌 Data de Entrega: {{ $json.cabecalho['Data de entrega'] }}\n\n🏷️ Etiquetas: {{ ($json.produto.etiquetas).join(', ') }}\n\nVendedor: {{ $json.cabecalho.Vendedor }}\nOrçamentista: {{ $json.cabecalho['Orçamentista/atendente'] }}",
+        "additionalFields": {
+          "due": "={{ (() => {\n  const data = ($json.cabecalho['Data de entrega'] || '').trim();\n  const hora = ($json.cabecalho['Hora de entrega'] || '12:00').trim();\n  if (!data) return '';\n\n  const [dia, mes, ano] = data.split('/');\n  const horaValida = /^\\d{2}:\\d{2}$/.test(hora) ? hora : '12:00';\n\n  return `${ano}-${mes}-${dia}T${horaValida}:00-03:00`;\n})() }}",
+          "pos": "top"
+        }
+      },
+      "type": "n8n-nodes-base.trello",
+      "typeVersion": 1,
+      "position": [
+        400,
+        16
+      ],
+      "id": "{{ID_INTERNO_71}}",
+      "name": "Create a card",
+      "credentials": {
+        "trelloApi": {
+          "id": "{{ID_CREDENCIAL_TRELLO_01}}",
+          "name": "{{TRELLO_CREDENTIAL_NAME}}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Tratar descricao_cliente": {
+      "main": [
+        [
+          {
+            "node": "Montar mensagem WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar mensagem WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar linha planilha": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Encontrar primeira linha vazia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encontrar primeira linha vazia": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar upsert Supabase": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Preparar timestamps Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar timestamps Supabase": {
+      "main": [
+        [
+          {
+            "node": "Persistir OS no Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persistir OS no Supabase": {
+      "main": [
+        []
+      ]
+    },
+    "Preparar linhas itens/subitens BD": {
+      "main": [
+        [
+          {
+            "node": "Persistir itens e subitens no Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Tratar descricao_cliente",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preparar linha planilha",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Explodir itens Trello",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preparar upsert Supabase",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preparar linhas itens/subitens BD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explodir itens Trello": {
+      "main": [
+        [
+          {
+            "node": "Create a card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a card": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "{{CALLERPOLICY_01}}",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "{{ID_WORKFLOW_ERRO_01}}"
+  },
+  "versionId": "{{ID_VERSAO_03}}",
+  "id": "{{ID_INTERNO_72}}",
+  "tags": []
+}

@@ -1,0 +1,15 @@
+{
+  "from": "5500000000000",
+  "sender": "Usuario Exemplo",
+  "chatId": "5500000000000@c.us",
+  "filename": "ordem_de_servico_12345_cliente_exemplo.pdf",
+  "filename_normalized": "ordem_de_servico_12345_cliente_exemplo.pdf",
+  "mediaUrl": "https://api.exemplo.invalid/media/arquivo-os-12345.pdf",
+  "mediaId": "media_exemplo_12345",
+  "caption": "",
+  "timestamp": 1710000000000,
+  "is_allowed": true,
+  "is_target_file": true,
+  "from_raw": "5500000000000@c.us",
+  "from_digits": "5500000000000"
+}
