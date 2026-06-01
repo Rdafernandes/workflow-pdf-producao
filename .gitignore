@@ -1,0 +1,39 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Ambiente
+.env
+.env.*
+*.secret
+*.key
+
+# Backups
+*.zip
+*.rar
+*.7z
+
+# Arquivos temporários
+tmp/
+temp/
+
+# Arquivos reais ou sensíveis
+workflows/originais/
+**/originais/
+*.original.json
+*.bruto.json
+*.raw.json
+
+# PDFs reais
+samples/**/*.pdf
+
+# Saídas reais não sanitizadas
+samples/**/*.csv
+samples/**/*.xlsx
