@@ -152,6 +152,20 @@ Ao final do workflow 2, a Ordem de Serviço deixa de ser um PDF isolado e passa 
 
 Essa transformação é o que viabiliza todo o valor do restante da automação.
 
+## Resultado do processamento
+
+Entrada:
+- Documento PDF
+- Metadados operacionais
+
+Saída:
+- Dados estruturados
+- Payload consolidado
+- Arquivo preparado para distribuição
+
+Objetivo:
+Reduzir processamento manual e padronizar o consumo dos dados pelas etapas seguintes.
+
 ## Exemplo público
 
 Exemplos fictícios da estrutura gerada por este workflow estão disponíveis em [`samples/processamento/`](../samples/processamento/).
