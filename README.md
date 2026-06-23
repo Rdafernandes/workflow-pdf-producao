@@ -11,7 +11,20 @@ Este case apresenta uma automação operacional baseada em três workflows encad
 
 A arquitetura foi estruturada para receber eventos de entrada, validar documentos elegíveis, processar informações operacionais e distribuir saídas para canais definidos, mantendo rastreabilidade e separação clara de responsabilidades.
 
-A publicação foi adaptada para portfólio público por meio de sanitização completa dos dados sensíveis.
+A publicação foi adaptada para portfólio público por meio de sanitização completa dos dados sensíveis.]
+
+## Competências demonstradas
+
+Este projeto demonstra experiência prática em:
+
+* Construção de soluções ponta a ponta utilizando workflows desacoplados
+* Integração entre sistemas utilizando APIs e comunicação orientada a eventos
+* Transformação de documentos não estruturados em dados operacionais reutilizáveis
+* Estruturação e distribuição automatizada de informações
+* Modelagem de processos operacionais
+* Manipulação e consolidação de payloads em JSON
+* Desenvolvimento de lógica aplicada em automações
+* Observabilidade, rastreabilidade e manutenção de fluxos produtivos
 
 ## Problema
 
@@ -52,12 +65,14 @@ Aspectos destacados:
 
 ## Stack utilizada
 
-- **n8n** — orquestração e execução dos workflows
+- **n8n** — orquestração, execução e desacoplamento dos workflows
 - **Webhooks** — recebimento assíncrono dos eventos de entrada
+- **REST APIs** — integração e comunicação entre serviços
 - **Google Drive** — persistência e organização documental
 - **Google Sheets** — apoio operacional e estruturação de registros
 - **WhatsApp API** — distribuição das saídas operacionais
 - **JSON** — comunicação estruturada entre workflows
+- **JavaScript** — transformação de dados e regras operacionais nos fluxos
 - **Documentação sanitizada** — adaptação segura para publicação pública
 
 ## Fluxo macro
@@ -69,6 +84,22 @@ Aspectos destacados:
 5. Organização do arquivo e metadados em armazenamento externo
 6. Consolidação de payload operacional
 7. Distribuição para mensageria, planilha, cards e banco de dados
+
+## Decisões técnicas relevantes
+
+Durante o desenvolvimento foram adotadas algumas decisões para reduzir acoplamento e facilitar manutenção:
+
+- Separação por responsabilidade
+Cada workflow executa apenas uma responsabilidade principal (entrada, processamento ou distribuição).
+
+- Comunicação estruturada
+A troca entre etapas ocorre através de payloads intermediários em formato JSON.
+
+- Processamento em múltiplas etapas
+A estrutura foi dividida para facilitar validação, depuração e evolução isolada de cada componente.
+
+- Publicação segura
+Os fluxos foram sanitizados para manter a estrutura técnica sem expor dados operacionais reais.
 
 ## Exemplos públicos
 
