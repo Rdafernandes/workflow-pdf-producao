@@ -99,3 +99,11 @@ Essa abordagem também ajuda a evitar que todo o processo fique concentrado em u
 A versão pública deste case apresenta a arquitetura em nível técnico e conceitual, preservando a lógica da solução sem expor detalhes sensíveis do ambiente real.
 
 Credenciais, endpoints privados, IDs internos, regras sensíveis e identificadores operacionais foram removidos ou substituídos por placeholders.
+
+## Princípios adotados
+
+- Baixo acoplamento entre etapas
+- Reprocessamento independente por workflow
+- Dados intermediários reutilizáveis
+- Observabilidade operacional
+- Evolução incremental do fluxo
