@@ -1,5 +1,13 @@
 # Índice da documentação
 
+## O que observar neste projeto
+
+- Separação arquitetural dos workflows
+- Evolução dos dados ao longo do pipeline
+- Estratégia de desacoplamento
+- Estrutura de payloads intermediários
+- Estratégia de publicação sanitizada
+
 ## Leitura recomendada
 1. [Planejamento](00-planejamento.md)
 2. [Visão geral](01-visao-geral.md)
