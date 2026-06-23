@@ -25,6 +25,7 @@ Este projeto demonstra experiência prática em:
 * Manipulação e consolidação de payloads em JSON
 * Desenvolvimento de lógica aplicada em automações
 * Observabilidade, rastreabilidade e manutenção de fluxos produtivos
+* Tradução de processos operacionais em soluções técnicas automatizadas
 
 ## Problema
 
@@ -72,7 +73,7 @@ Aspectos destacados:
 - **Google Sheets** — apoio operacional e estruturação de registros
 - **WhatsApp API** — distribuição das saídas operacionais
 - **JSON** — comunicação estruturada entre workflows
-- **JavaScript** — transformação de dados e regras operacionais nos fluxos
+- **JavaScript** — transformação de payloads, tratamento de dados e implementação de regras operacionais
 - **Documentação sanitizada** — adaptação segura para publicação pública
 
 ## Fluxo macro
@@ -90,7 +91,7 @@ Aspectos destacados:
 Durante o desenvolvimento foram adotadas algumas decisões para reduzir acoplamento e facilitar manutenção:
 
 - **Separação por responsabilidade** - Cada workflow executa apenas uma responsabilidade principal (entrada, processamento ou distribuição).
-- **omunicação estruturada** - A troca entre etapas ocorre através de payloads intermediários em formato JSON.
+- **Comunicação estruturada** - A troca entre etapas ocorre através de payloads intermediários em formato JSON.
 - **Processamento em múltiplas etapas** - A estrutura foi dividida para facilitar validação, depuração e evolução isolada de cada componente.
 - **Publicação segura** - Os fluxos foram sanitizados para manter a estrutura técnica sem expor dados operacionais reais.
 
@@ -196,6 +197,7 @@ A arquitetura proposta busca gerar ganhos operacionais por meio de:
 - aumento da rastreabilidade entre entrada, processamento e distribuição
 - menor acoplamento entre etapas do fluxo
 - estrutura mais simples de manter, auditar e evoluir
+- padronização da entrada e saída dos dados entre etapas do processo
 
 ## Documentação complementar
 
