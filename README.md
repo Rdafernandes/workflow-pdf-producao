@@ -89,10 +89,10 @@ Aspectos destacados:
 
 Durante o desenvolvimento foram adotadas algumas decisões para reduzir acoplamento e facilitar manutenção:
 
-- Separação por responsabilidade: Cada workflow executa apenas uma responsabilidade principal (entrada, processamento ou distribuição).
-- Comunicação estruturada: A troca entre etapas ocorre através de payloads intermediários em formato JSON.
-- Processamento em múltiplas etapas: A estrutura foi dividida para facilitar validação, depuração e evolução isolada de cada componente.
-- Publicação segura: Os fluxos foram sanitizados para manter a estrutura técnica sem expor dados operacionais reais.
+- **Separação por responsabilidade** - Cada workflow executa apenas uma responsabilidade principal (entrada, processamento ou distribuição).
+- **omunicação estruturada** - A troca entre etapas ocorre através de payloads intermediários em formato JSON.
+- **Processamento em múltiplas etapas** - A estrutura foi dividida para facilitar validação, depuração e evolução isolada de cada componente.
+- **Publicação segura** - Os fluxos foram sanitizados para manter a estrutura técnica sem expor dados operacionais reais.
 
 ## Exemplos públicos
 
